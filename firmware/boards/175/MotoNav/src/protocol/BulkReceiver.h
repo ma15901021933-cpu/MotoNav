@@ -6,14 +6,17 @@ void handleBulk(const uint8_t *d, int n) {
   int type = d[1], id = d[2];
   int parts = d[3] | (d[4] << 8), seq = d[5] | (d[6] << 8);
   uint32_t total = (uint32_t)rd32(d + 7), off = (uint32_t)rd32(d + 11);
-  if (type < 1 || type > 4) return;
+  if (type < 1 || type > VOICE_BULK) return;
   Bulk &b = bulks[type];
   if (!b.buf || total == 0 || total > b.cap || parts == 0 || parts > 4096 || seq >= parts) return;
   if (id != b.id || total != b.total || parts != b.parts) {     // 新的一份：从头开始收
     b.id = id; b.total = total; b.parts = parts; b.got = 0; b.done = false;
     memset(b.mask, 0, sizeof(b.mask));
   }
-  if (b.done) { pendingAck = "K," + String(type) + "," + String(id); return; }   // 重复的：再确认一次
+  if (b.done) {                                       // 重复的：再确认一次
+    (type == VOICE_BULK ? pendingVoiceAck : pendingAck) = "K," + String(type) + "," + String(id);
+    return;
+  }
   uint32_t len = n - 15;
   if (off >= total) return;
   if (off + len > total) len = total - off;
@@ -24,6 +27,11 @@ void handleBulk(const uint8_t *d, int n) {
   }
   if (b.got >= b.parts) {
     b.done = true;
+    if (type == VOICE_BULK) {                          // v7.13 播报声音：不碰导航画面
+      if (!voiceQueue(b.buf, total, id)) { b.done = false; b.got = 0; memset(b.mask, 0, sizeof(b.mask)); return; }
+      pendingVoiceAck = "K," + String(type) + "," + String(id);
+      return;
+    }
     if (type == 1) {
       uint8_t *t = mapShow; mapShow = b.buf; b.buf = t;   // 交换：新图显示，旧缓冲留着收下一块
       parseMap(mapShow, total);

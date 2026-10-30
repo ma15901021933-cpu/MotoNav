@@ -27,6 +27,7 @@
 #include "src/display/RowWorker.h"
 #include "src/map/RasterRenderer.h"
 #include "src/map/RouteRenderer.h"
+#include "src/audio/VoicePlayer.h"
 #include "src/protocol/BulkReceiver.h"
 #include "src/power/BatteryPolling.h"
 #include "src/connectivity/Notifications.h"
@@ -71,6 +72,7 @@ void setup() {
   iconBuf = (uint16_t *)ps_malloc(ICON_BUF_W * ICON_BUF_H * 2);   // v1.8.1 图标缓存
   buildRingLut();                                                   // v1.8.3 抗锯齿圆环查找表
   mapInit();                                                        // v2.0 小地图缓冲
+  voiceInit();                                                      // v7.13 播报从圆屏喇叭出声
   for (int i = 0; i < IMG_SLOTS; i++) {
     imgs[i].show = (uint8_t *)ps_malloc(IMG_MAX);
     imgs[i].recv = (uint8_t *)ps_malloc(IMG_MAX);
@@ -154,6 +156,7 @@ void setup() {
 // 主循环：接收消息、处理输入、调度页面、绘图和推屏。
 void loop() {
   homeClock.tick(millis());
+  voiceSerialPoll();                                   // v7.13 串口 "#VT" 测喇叭
   hidMediaTick();                                      // press/release without blocking navigation
   static uint32_t lyricConnectionEpoch = 0;
   if (lyricConnectionEpoch != mediaConnectionEpoch) {

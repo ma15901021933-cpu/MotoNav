@@ -16,6 +16,7 @@ struct ContentView: View {
     @ObservedObject var map = MapFeeder.shared
     @ObservedObject var history = History.shared
     @ObservedObject var favorites = Favorites.shared
+    @ObservedObject var screenVoice = ScreenVoice.shared
     @State private var page = 0
     @State private var showWebMotor = false
     @State private var independentMode: IndependentMode = .motorcycle
@@ -543,7 +544,15 @@ struct ContentView: View {
         CardView {
             Text("导航语音").foregroundColor(.white).bold()
             Toggle("导航静音", isOn: $settings.voiceMuted)
-            Toggle("播报时压低音乐", isOn: $settings.duck)
+            Toggle("从圆屏喇叭播报（不用手机喇叭）", isOn: $settings.screenVoice)
+            if settings.screenVoice {
+                Text(ble.voiceSupported ? "圆屏音量 \(Int(settings.screenVolume))" : "圆屏未连接或固件不支持：播报会静音，不会改用手机喇叭")
+                    .font(.footnote).foregroundColor(ble.voiceSupported ? Self.sub : .orange)
+                if ble.voiceSupported { Slider(value: $settings.screenVolume, in: 0...100, step: 5) }
+                if !screenVoice.lastStatus.isEmpty { Text(screenVoice.lastStatus).font(.footnote).foregroundColor(Self.sub) }
+            } else {
+                Toggle("播报时压低音乐", isOn: $settings.duck)
+            }
             Picker("系统音色", selection: $voiceID) {
                 Text("自动优选中文").tag("")
                 ForEach(AVSpeechSynthesisVoice.speechVoices().filter { $0.language.hasPrefix("zh") }, id: \.identifier) { voice in

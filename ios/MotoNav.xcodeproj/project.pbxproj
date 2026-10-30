@@ -50,6 +50,7 @@
 		AE251B726FE056E18C8D9EEB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 897E512FD4DCDA4C4D4FBDB4 /* ContentView.swift */; };
 		B2101005A64EDC38F1C64324 /* Weather.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA95E37764E4683EFF26E57 /* Weather.swift */; };
 		B88940BFDB14C57288B4528D /* Speech.swift in Sources */ = {isa = PBXBuildFile; fileRef = B06991A4E6681422A044C310 /* Speech.swift */; };
+		5C4E0A1B2C3D4E5F60718293 /* ScreenVoicePacker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C4E0A1B2C3D4E5F60718294 /* ScreenVoicePacker.swift */; };
 		C71CA48A91926BFC9B43FDCF /* RouteMapPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CFF68B635D8A95A2698DD4 /* RouteMapPlan.swift */; };
 		CE38FAAF34CBBFAD84451088 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78E8A2064569BFBA9955CD8C /* Config.swift */; };
 		D5BE622C01F486F6A26CC504 /* MusicBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = C671E80BBEA3EB1E9311EB12 /* MusicBridge.swift */; };
@@ -127,6 +128,7 @@
 		AE986FABCE46D794A926A66C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AFA95E37764E4683EFF26E57 /* Weather.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weather.swift; sourceTree = "<group>"; };
 		B06991A4E6681422A044C310 /* Speech.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Speech.swift; sourceTree = "<group>"; };
+		5C4E0A1B2C3D4E5F60718294 /* ScreenVoicePacker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenVoicePacker.swift; sourceTree = "<group>"; };
 		B1D98E37A20EBA144DF72115 /* RouteOfflineMaps.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RouteOfflineMaps.swift; sourceTree = "<group>"; };
 		B4B241FAB7374DB0A879A3A8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B87D4C1E645243F8238975E5 /* AMSMetadata.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AMSMetadata.swift; sourceTree = "<group>"; };
@@ -216,6 +218,7 @@
 				A40A9BADB71E11A51F582DB7 /* TextImage.swift */,
 				66C3696F54839CD45813F948 /* Settings.swift */,
 				B06991A4E6681422A044C310 /* Speech.swift */,
+				5C4E0A1B2C3D4E5F60718294 /* ScreenVoicePacker.swift */,
 				7E30F4D8B800F5F593B76481 /* NaviBridge.swift */,
 				FEA0D76EEBF01653D1E587E8 /* NaviSessionCallbacks.swift */,
 				43332154B324B9A7004CB3C3 /* ArrivalPolicy.swift */,
@@ -433,6 +436,7 @@
 				2E32750F8C17EB28CFB67AAC /* TextImage.swift in Sources */,
 				ABBCC4AD2877914978EB58E7 /* Settings.swift in Sources */,
 				B88940BFDB14C57288B4528D /* Speech.swift in Sources */,
+				5C4E0A1B2C3D4E5F60718293 /* ScreenVoicePacker.swift in Sources */,
 				5990C5F0E5EAB70145D9379E /* NaviBridge.swift in Sources */,
 				562A8BDFD5FE84EC55914B53 /* NaviSessionCallbacks.swift in Sources */,
 				96EEC660FCE57B693CF21764 /* ArrivalPolicy.swift in Sources */,
@@ -493,7 +497,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.15.0;
+				MARKETING_VERSION = 0.15.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.motonav;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -576,7 +580,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.15.0;
+				MARKETING_VERSION = 0.15.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.motonav.share;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -601,7 +605,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.15.0;
+				MARKETING_VERSION = 0.15.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.motonav.share;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -629,7 +633,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.15.0;
+				MARKETING_VERSION = 0.15.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.motonav;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

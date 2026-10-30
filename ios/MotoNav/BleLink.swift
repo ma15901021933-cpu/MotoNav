@@ -33,6 +33,7 @@ final class BleLink: NSObject, ObservableObject {
     private var txNotifyReady = false
     @Published private(set) var buildingsSupported = false
     @Published var isReady = false
+    @Published private(set) var voiceSupported = false   // 圆屏固件能用自己的喇叭播报（CAP,VOX,1）
     @Published var sentCount = 0
     @Published var lastSent = ""
     @Published var screenStats = ""
@@ -240,12 +241,13 @@ final class BleLink: NSObject, ObservableObject {
 
     /// 发一份小地图大块数据（地图块 / 路线）。同类型还没发完的旧数据直接作废。
     /// 每片：'M' 类型 编号 总片数(2) 片序号(2) 总字节(4) 偏移(4) + 数据
-    func sendBulk(type: Int, id: Int, data: Data) {
-        guard isReady else { return }
+    @discardableResult
+    func sendBulk(type: Int, id: Int, data: Data) -> Bool {
+        guard isReady else { return false }
         let payload = maxWrite - BULK_HEADER
-        if payload < 100 { return }                     // 没协商到大数据包就不发
+        if payload < 100 { return false }               // 没协商到大数据包就不发
         let parts = (data.count + payload - 1) / payload
-        if parts == 0 || parts > 4000 { return }
+        if parts == 0 || parts > 4000 { return false }
         let total = data.count
         var packets: [Data] = []
         for p in 0..<parts {
@@ -261,6 +263,7 @@ final class BleLink: NSObject, ObservableObject {
         bulkQ.replace(type: type, id: id, packets: packets)
         bulkKB += total / 1024
         pump()
+        return true
     }
 
     /// 还有大块数据没发完
@@ -420,6 +423,7 @@ extension BleLink: CBCentralManagerDelegate, CBPeripheralDelegate {
         guard p === peripheral else { return }
         status = "连接失败，重试中…"
         mediaHIDSupported = false; mediaHIDReady = false; mediaHIDMode = false; mediaLyricsSupported = false; mediaLyricsActive = false; mediaAMSControls = 0; verified = false; buildingProbe.reset(); txNotifyReady = false
+        voiceSupported = false; ScreenVoice.shared.linkLost()
         MusicBridge.shared.resetAMS()
         isReady = false
         connectionRetries+=1
@@ -435,6 +439,7 @@ extension BleLink: CBCentralManagerDelegate, CBPeripheralDelegate {
         bulkQ.reset(); bulkBarrier.reset(); bulkWriteSerial += 1
         buildingsSupported = false
         mediaHIDSupported = false; mediaHIDReady = false; mediaHIDMode = false; mediaLyricsSupported = false; mediaLyricsActive = false; mediaAMSControls = 0; verified = false; buildingProbe.reset(); txNotifyReady = false
+        voiceSupported = false; ScreenVoice.shared.linkLost()
         MusicBridge.shared.resetAMS()
         MapFeeder.shared.onBuildingCapability()
         rxChar = nil;txChar=nil
@@ -501,6 +506,10 @@ extension BleLink: CBCentralManagerDelegate, CBPeripheralDelegate {
             mediaLyricsSupported = true
             MusicBridge.shared.syncMode(); MusicBridge.shared.refresh(force: true); return
         }
+        if s == "CAP,VOX,1" {
+            if !voiceSupported { voiceSupported = true; Settings.shared.sendScreenVolume() }
+            return
+        }
         if s == "CAP,BLD,1" {
             if !buildingsSupported { buildingsSupported = true; MapFeeder.shared.onBuildingCapability() }
             return
@@ -519,8 +528,12 @@ extension BleLink: CBCentralManagerDelegate, CBPeripheralDelegate {
         }
         if parts.first == "K", parts.count >= 3, let t = Int(parts[1]), let id = Int(parts[2]) {
             bulkQ.acknowledge(type: t, id: id)
+            if t == ScreenVoice.bulkType { ScreenVoice.shared.acknowledged(id: id); return }
             MapFeeder.shared.onAck(type: t, id: id)
             return
+        }
+        if parts.first == "VE", parts.count == 2, let id = Int(parts[1]) {
+            ScreenVoice.shared.ended(id: id); return
         }
         if parts.first == "S", parts.count >= 4 {
             screenFps = parts[1]

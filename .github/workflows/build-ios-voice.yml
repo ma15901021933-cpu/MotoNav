@@ -1,0 +1,35 @@
+name: Build iOS IPA (screen voice test)
+# 只编未签名 IPA 供自己用 Sideloadly 签名安装；不发 Release、不编固件。
+on:
+  push:
+    branches: ['voice/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ipa:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify screen voice and BLE logic
+        run: |
+          swiftc ios/MotoNav/ScreenVoicePacker.swift ios/tests/screen-voice/main.swift -o /tmp/screen-voice
+          /tmp/screen-voice
+          swiftc ios/MotoNav/BleBulkWriteQueue.swift ios/MotoNav/BleWritePacer.swift ios/tests/ble-bulk/main.swift -o /tmp/bulk
+          /tmp/bulk
+      - name: Install locked iOS dependencies
+        working-directory: ios
+        run: |
+          sudo gem install cocoapods -v 1.16.2 --no-document
+          pod _1.16.2_ install --deployment
+      - name: Build unsigned iPhone IPA
+        run: |
+          # build-ios-ipa.sh 核对 RELEASE_VERSION；这里跟随 Xcode 工程里的版本号
+          grep -m1 -o 'MARKETING_VERSION = [0-9.]*' ios/MotoNav.xcodeproj/project.pbxproj | awk '{print $3}' > RELEASE_VERSION
+          ./scripts/build-ios-ipa.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MotoNav-iOS-unsigned-ipa
+          path: output/ios/
+          retention-days: 14

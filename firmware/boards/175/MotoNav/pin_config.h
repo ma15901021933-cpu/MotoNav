@@ -8,7 +8,7 @@
 #define LCD_SDIO3 7
 #define LCD_SCLK 38
 #define LCD_CS 12
-#define LCD_RESET 39
+#define LCD_RESET 1  // Waveshare 1.75C: official board_config/pin_config.h
 #define LCD_WIDTH 466
 #define LCD_HEIGHT 466
 
@@ -16,7 +16,7 @@
 #define IIC_SDA 15
 #define IIC_SCL 14
 #define TP_INT 11
-#define TP_RESET 40
+#define TP_RESET 2   // Waveshare 1.75C: TP_RST in official board config
 
 // ES8311
 #define I2S_MCK_IO 16

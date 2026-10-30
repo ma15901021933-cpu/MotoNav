@@ -105,6 +105,7 @@ void handleText(const String &m) {
     pendingBootAck = "BOOT," + String(saved ? bootBrand : -1);
     return;
   }
+  if (m.startsWith("#VV,") || m == "#VX" || m == "#VT") { handleVoiceText(m); return; }   // v7.13 圆屏播报音量 / 静音 / 自检
   if (m == "#AMS?") { appleMedia.resend(); return; }
   if (m == "#GB?") { pendingBuildingCapability=true; return; }
   if (m.startsWith("#ZACK,")) {

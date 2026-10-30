@@ -10,6 +10,7 @@ void sendPendingAck() {
     txChar->notify();
     txChar->setValue((uint8_t *)"CAP,HID,1", 9); txChar->notify();
     txChar->setValue((uint8_t *)"CAP,LYR,1", 9); txChar->notify();
+    if (voiceReady) { txChar->setValue((uint8_t *)"CAP,VOX,1", 9); txChar->notify(); }   // v7.13 能用圆屏喇叭播报
     pendingHidStatus = String("HID,") + (hidMusicMode ? 1 : 0) + "," + (hidMediaReady() ? 1 : 0);
     appleMedia.resend();
     pendingLyricsStatus = String("ML,") + (musicLyrics ? 1 : 0);
@@ -34,6 +35,16 @@ void sendPendingAck() {
     txChar->setValue((uint8_t *)pendingAck.c_str(), pendingAck.length());
     txChar->notify();
     pendingAck = "";
+  }
+  if (pendingVoiceAck.length()) {
+    txChar->setValue((uint8_t *)pendingVoiceAck.c_str(), pendingVoiceAck.length());
+    txChar->notify(); pendingVoiceAck = "";
+  }
+  const int ended = voiceEndedId;
+  if (ended >= 0) {                                    // v7.13 这句放完了（手机据此判断“正在播报”）
+    voiceEndedId = -1;
+    char m[12]; int n = snprintf(m, sizeof(m), "VE,%d", ended);
+    txChar->setValue((uint8_t *)m, n); txChar->notify();
   }
   if (pendingStat2.length()) {
     txChar->setValue((uint8_t *)pendingStat2.c_str(), pendingStat2.length());

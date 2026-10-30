@@ -11,10 +11,13 @@ struct BleBulkWriteQueue {
     var hasData: Bool { inFlight != nil || !parts.isEmpty }
     var canStart: Bool { inFlight == nil && !parts.isEmpty }
     var queuedCount: Int { parts.count }
+    /// 圆屏播报的声音（类型 5）插到最前面：导航提示不能排在一整张地图后面。
+    static let urgentType = 5
     mutating func replace(type: Int, id: Int, packets: [Data]) {
         parts.removeAll { $0.type == type }
         latest[type] = id; acknowledged.removeValue(forKey: type)
-        parts.append(contentsOf: packets.map { Part(type: type, id: id, data: $0) })
+        let fresh = packets.map { Part(type: type, id: id, data: $0) }
+        if type == Self.urgentType { parts.insert(contentsOf: fresh, at: 0) } else { parts.append(contentsOf: fresh) }
     }
     mutating func next() -> Part? {
         guard canStart else { return nil }

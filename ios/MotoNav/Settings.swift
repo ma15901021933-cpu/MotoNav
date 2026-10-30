@@ -136,6 +136,19 @@ final class Settings: ObservableObject {
         didSet { ud.set(leadMs,forKey:"lead_ms"); BleLink.shared.send("#L\(leadMs)") }
     }
     @Published var voiceMuted: Bool { didSet { ud.set(voiceMuted, forKey: "nav_muted") } }
+    /// 导航播报从圆屏喇叭出声，不用手机喇叭（需要圆屏固件 7.13 起）
+    @Published var screenVoice: Bool = UserDefaults.standard.bool(forKey: "screen_voice") {
+        didSet { ud.set(screenVoice, forKey: "screen_voice"); if !screenVoice { ScreenVoice.shared.stop() } }
+    }
+    @Published var screenVolume: Double = UserDefaults.standard.object(forKey: "screen_volume") as? Double ?? 80 {
+        didSet { ud.set(screenVolume, forKey: "screen_volume"); volumeTimer?.invalidate()
+            volumeTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: false) { [weak self] _ in self?.sendScreenVolume() } }
+    }
+    private var volumeTimer: Timer?
+    /// 老固件不认识这条，只在圆屏报告支持后发
+    func sendScreenVolume() {
+        if BleLink.shared.voiceSupported { BleLink.shared.send("#VV,\(Int(screenVolume))") }
+    }
 
     // Key 设置：用户在 App 里填自己的 key，只存在这台手机上。iOS v0.7 起代码里不再内置任何 key，没填时打开 App 会提醒
     /// 高德 key（iOS 平台，绑定这个 App 的 Bundle ID）：填好后 applyAmapKey() 马上交给高德
@@ -208,6 +221,7 @@ final class Settings: ObservableObject {
         b.send(progressRing ? "#M1" : "#M0")
         b.send("#L\(leadMs)")
         b.send(clean ? "#w,1" : "#w,0")
+        sendScreenVolume()
     }
 
     // MARK: - 昼夜自动切换（和安卓版 Brightness.kt 一样：每分钟按当地日出日落检查一次）

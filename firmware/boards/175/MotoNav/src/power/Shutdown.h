@@ -4,6 +4,7 @@
 // referencing those objects. Shutdown does not need to reclaim their memory.
 void idlePowerOffShutdown() {
   powerOffPending = true;
+  voiceShutdown();
   Serial.println("No navigation for 5 minutes: powering off");
   const bool displayReady = !flushDone ||
       xSemaphoreTake(flushDone, pdMS_TO_TICKS(3000)) == pdTRUE;
