@@ -72,6 +72,16 @@ enum AmapCapturePolicy {
         guard reference.count == 4, current.count == 4 else { return false }
         return zip(reference, current).allSatisfy { a, b in a.isFinite && b.isFinite && abs(a - b) <= 0.5 }
     }
+    /// Two snapshots of the same camera agree once AMap has finished streaming its tiles.
+    static func settled(_ a: [UInt32], _ b: [UInt32]) -> Bool {
+        guard a.count == b.count, !a.isEmpty else { return false }
+        var changed = 0, samples = 0
+        for i in stride(from: 0, to: a.count, by: 5) {
+            samples += 1
+            if AmapBuildings.colorDifference(a[i], b[i]) >= 8 { changed += 1 }
+        }
+        return changed * 1000 <= samples
+    }
     static func completed(_ result: AmapBuildings.Result) -> Bool { result.buildings > 0 && result.roofPixels > 0 }
 }
 
