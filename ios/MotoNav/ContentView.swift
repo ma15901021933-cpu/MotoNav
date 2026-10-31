@@ -501,6 +501,11 @@ struct ContentView: View {
             Toggle("小地图", isOn: $settings.mapOn).foregroundColor(.white).tint(ContentView.pink)
             if settings.mapOn {
                 Text("地图来源：高德（普通底图和卫星图）").font(.caption).foregroundColor(ContentView.sub)
+                Picker("地图细节", selection: $settings.fineMap) {
+                    Text("标准").tag(false); Text("精细").tag(true)
+                }
+                .pickerStyle(.segmented)
+                Text(settings.fineMap ? "精细：小路更多，出图较慢" : "标准：出图快，只显示主要道路").font(.caption2).foregroundColor(ContentView.sub)
                 if settings.mapSource == MapFeeder.SRC_AMAP && settings.theme == 1 {
                     Toggle("俯视建筑轮廓", isOn: $settings.buildings).foregroundColor(.white).tint(ContentView.pink)
                     Text(ble.buildingsSupported ? "圆屏支持建筑图层，默认提取高德建筑俯视轮廓" : "正在查询圆屏建筑能力；确认前先显示普通底图")

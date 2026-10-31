@@ -122,7 +122,7 @@ final class MapFeeder: ObservableObject {
         var hasher = Hasher()
         for c in coords { hasher.combine(c.lat); hasher.combine(c.lng) }
         // 选路线和开始导航给同一条路线起的名字不同，只按坐标判断是不是同一条，免得反复重来
-        let identity = "\(hasher.finalize())|\(src)|\(buildingMode)"
+        let identity = "\(hasher.finalize())|\(src)|\(buildingMode)|\(Settings.shared.fineMap)"
         if identity == offlineKey, offlineMaps != nil { return }
         offlineMaps?.close(); offlineKey = identity; routeProgress = -1
         MapPipelineTrace.event("route-prepare", ["points": coords.count])
@@ -229,7 +229,7 @@ final class MapFeeder: ObservableObject {
         let serial = requestSerial
         MapPipelineTrace.event("fetch-start", ["serial": serial, "buildings": buildingMode, "source": Settings.shared.mapSource])
         workToken.cancel(); let token = MapWorkToken(); workToken = token
-        let src = Settings.shared.mapSource, sat = satMode, buildings = buildingMode, style = Settings.shared.theme
+        let src = Settings.shared.mapSource, sat = satMode, buildings = buildingMode, style = Settings.shared.theme, fine = Settings.shared.fineMap
         let half = HALF, satHalf = SAT_HALF, maps = offlineMaps
         // Cached packets can be read and sent even when iOS has suspended graphics rendering.
         if let node = node, let cached = maps?.read(node) {
@@ -247,11 +247,11 @@ final class MapFeeder: ObservableObject {
             do {
                 if token.isCancelled { throw MapProcessingError.cancelled }
                 if sat {
-                    bytes = try AmapSdkRaster.build(f,cx: cx,cy: cy,includeBuildings: false,shouldCancel: { token.isCancelled },satellite: true, style: style).bytes
+                    bytes = try AmapSdkRaster.build(f,cx: cx,cy: cy,includeBuildings: false,shouldCancel: { token.isCancelled },satellite: true, style: style, fine: fine).bytes
                     gotSat = true; info = "高德卫星图"
                 } else if src == Self.SRC_AMAP {
                     bytes = try AmapSdkRaster.build(f, cx: cx, cy: cy, includeBuildings: buildings, shouldCancel: { token.isCancelled }, onBaseReady: { base in
-                        if let node = node { try? RouteMapCache.shared.store(base, frame: f, source: src, node: node, style: style) }
+                        if let node = node { try? RouteMapCache.shared.store(base, frame: f, source: src, node: node, style: style, fine: fine) }
                         DispatchQueue.main.async {
                             if serial == self.requestSerial && !token.isCancelled {
                                 self.fetchingBaseReady = true
@@ -262,11 +262,11 @@ final class MapFeeder: ObservableObject {
                         DispatchQueue.main.async {
                             if serial == self.requestSerial && !token.isCancelled { self.buildingInfo = message }
                         }
-                    }, style: style).bytes
+                    }, style: style, fine: fine).bytes
                     info = "高德无字底图，2 米/像素"
                 }
                 if let packet = bytes, let node = node, !sat, !token.isCancelled {
-                    try? RouteMapCache.shared.store(packet, frame: f, source: src, node: node, style: style)
+                    try? RouteMapCache.shared.store(packet, frame: f, source: src, node: node, style: style, fine: fine)
                 }
             } catch { errorText = error.localizedDescription }
             DispatchQueue.main.async {

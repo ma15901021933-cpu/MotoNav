@@ -65,9 +65,10 @@ enum AmapCapturePolicy {
     // SDK zoom is based on logical view bounds, not on Retina screenshot pixel count.
     // Keep the 3x drawable below 4096 pixels; 1200 points still exceeds zoom 17
     // for a 1.2km building tile. Android pixel dimensions are not iOS points.
-    // Base: 1360 points (3x = 4080 px) for 2.6 km ≈ 1.9 m/point. 720 points left out side streets;
-    // 1800 points (3x = 5400 px) exceeded the texture limit and every snapshot came back transparent.
-    static func renderSize(for tileSize: Int) -> Int { tileSize == 600 ? 1200 : 1360 }
+    // Base: standard 720 points (zoom ≈ 15, fast, few side streets); fine 1360 points (3x = 4080 px,
+    // ≈ 1.9 m/point, more side streets, slower). 1800 points (3x = 5400 px) exceeded the texture
+    // limit and every snapshot came back transparent.
+    static func renderSize(for tileSize: Int, fine: Bool = false) -> Int { tileSize == 600 ? 1200 : (fine ? 1360 : 720) }
     static func aligned(_ reference: [Double], _ current: [Double]) -> Bool {
         guard reference.count == 4, current.count == 4 else { return false }
         return zip(reference, current).allSatisfy { a, b in a.isFinite && b.isFinite && abs(a - b) <= 0.5 }

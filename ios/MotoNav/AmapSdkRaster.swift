@@ -4,7 +4,7 @@ import Foundation
 enum AmapSdkRaster {
     private static let lease = NSLock()
     static func build(_ f: MapGeo.Frame, cx: Double, cy: Double, includeBuildings: Bool,
-                      shouldCancel: @escaping () -> Bool, onBaseReady: ((Data) -> Void)? = nil, onBuildingStatus: ((String) -> Void)? = nil, satellite: Bool = false, style: Int = 1) throws -> RasterResult {
+                      shouldCancel: @escaping () -> Bool, onBaseReady: ((Data) -> Void)? = nil, onBuildingStatus: ((String) -> Void)? = nil, satellite: Bool = false, style: Int = 1, fine: Bool = false) throws -> RasterResult {
         precondition(!Thread.isMainThread)
         func check() throws { if shouldCancel() { throw MapProcessingError.cancelled } }
         while !lease.try() { try check(); Thread.sleep(forTimeInterval: 0.1) }
@@ -18,7 +18,7 @@ enum AmapSdkRaster {
             let box = CaptureResultBox(), sem = DispatchSemaphore(value: 0)
             DispatchQueue.main.async {
                 if shouldCancel() { box.set(.failure(MapProcessingError.cancelled)); sem.signal(); return }
-                AmapCaptureHost.shared.capture(f, x: x, y: y, size: n, satellite: satellite, style: style) { result in box.set(result); sem.signal() }
+                AmapCaptureHost.shared.capture(f, x: x, y: y, size: n, satellite: satellite, style: style, fine: fine) { result in box.set(result); sem.signal() }
             }
             var elapsed = 0.0
             do {

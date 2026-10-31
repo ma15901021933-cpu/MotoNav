@@ -68,6 +68,8 @@ final class Settings: ObservableObject {
     @Published var buildings: Bool = MapDefaults.buildings() {
         didSet { ud.set(buildings, forKey: "map_buildings"); MapFeeder.shared.resetChunk() }
     }
+    /// 小地图细节：关 = 标准（出图快，小路少）；开 = 精细（小路多，出图慢）
+    @Published var fineMap: Bool { didSet { ud.set(fineMap, forKey: "map_fine"); MapFeeder.shared.resetChunk() } }
     @Published private(set) var mapSource: Int { didSet { ud.set(mapSource, forKey: "map_src"); MapFeeder.shared.resetChunk() } }
     /// 走过的路线：1 变灰，2 擦除
     @Published var trail: Int { didSet { ud.set(trail, forKey: "map_trail"); BleLink.shared.send("#r,\(trail)") } }
@@ -192,6 +194,7 @@ final class Settings: ObservableObject {
         mapSource = MapDefaults.source(ud)
         trail = ud.object(forKey: "map_trail") as? Int ?? 1
         clean = ud.bool(forKey: "clean_mode")
+        fineMap = ud.bool(forKey: "map_fine")
         northUp = ud.object(forKey: "north_up") as? Bool ?? true
     }
 

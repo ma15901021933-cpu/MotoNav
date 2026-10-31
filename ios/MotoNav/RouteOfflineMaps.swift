@@ -11,7 +11,7 @@ final class MapWorkToken {
 }
 
 final class RouteOfflineMaps {
-    let style: Int
+    let style: Int, fine: Bool
     let frame: MapGeo.Frame, plan: RouteMapPlan, source: Int, buildings: Bool
     private let worker = DispatchQueue(label: "motonav.route-offline", qos: .utility)
     private let token = MapWorkToken()
@@ -25,14 +25,14 @@ final class RouteOfflineMaps {
     private var timer: Timer?
     init(frame: MapGeo.Frame, plan: RouteMapPlan, source: Int, buildings: Bool,
          foregroundBusy: @escaping () -> Bool, onReady: @escaping (RouteMapPlan.Node) -> Void, onStatus: @escaping (String) -> Void) {
-        self.style = Settings.shared.theme
+        self.style = Settings.shared.theme; self.fine = Settings.shared.fineMap
         self.frame = frame; self.plan = plan; self.source = source; self.buildings = buildings
         self.foregroundBusy = foregroundBusy; self.onReady = onReady; self.onStatus = onStatus
         ready = [Bool](repeating: false, count: plan.nodes.count); baseReady = ready
     }
     func read(_ node: RouteMapPlan.Node) -> Data? {
-        RouteMapCache.shared.read(frame: frame, source: source, buildings: buildings, node: node, style: style)
-            ?? (buildings ? RouteMapCache.shared.read(frame: frame, source: source, buildings: false, node: node, style: style) : nil)
+        RouteMapCache.shared.read(frame: frame, source: source, buildings: buildings, node: node, style: style, fine: fine)
+            ?? (buildings ? RouteMapCache.shared.read(frame: frame, source: source, buildings: false, node: node, style: style, fine: fine) : nil)
     }
     func update(_ index: Int) { target = max(0, min(plan.nodes.count - 1, index)) }
     func start() {
@@ -41,8 +41,8 @@ final class RouteOfflineMaps {
             var done = [Bool](repeating: false, count: self.plan.nodes.count), base = done
             for (i, node) in self.plan.nodes.enumerated() {
                 if self.token.isCancelled { return }
-                done[i] = RouteMapCache.shared.read(frame: self.frame, source: self.source, buildings: self.buildings, node: node, style: self.style) != nil
-                base[i] = done[i] || RouteMapCache.shared.read(frame: self.frame, source: self.source, buildings: false, node: node, style: self.style) != nil
+                done[i] = RouteMapCache.shared.read(frame: self.frame, source: self.source, buildings: self.buildings, node: node, style: self.style, fine: self.fine) != nil
+                base[i] = done[i] || RouteMapCache.shared.read(frame: self.frame, source: self.source, buildings: false, node: node, style: self.style, fine: self.fine) != nil
             }
             DispatchQueue.main.async {
                 guard !self.token.isCancelled else { return }
@@ -80,17 +80,17 @@ final class RouteOfflineMaps {
                         shouldCancel: { self.token.isCancelled || job.isCancelled }, onBaseReady: { base in
                             guard !self.token.isCancelled else { return }
                             do {
-                                try RouteMapCache.shared.store(base, frame: self.frame, source: self.source, node: node, style: self.style)
+                                try RouteMapCache.shared.store(base, frame: self.frame, source: self.source, node: node, style: self.style, fine: self.fine)
                                 DispatchQueue.main.async { if !self.token.isCancelled { self.baseReady[i] = true; self.onReady(node) } }
                             } catch { /* The final store reports storage errors in onStatus. */ }
                         }, onBuildingStatus: { message in
                             DispatchQueue.main.async { if !self.token.isCancelled { self.onStatus(message) } }
-                        }, style: self.style).bytes
+                        }, style: self.style, fine: self.fine).bytes
                 } else {
                     throw MapProcessingError.invalid("沿线预下载仅支持高德底图")
                 }
                 if self.token.isCancelled { throw MapProcessingError.cancelled }
-                try RouteMapCache.shared.store(packet, frame: self.frame, source: self.source, node: node, style: self.style)
+                try RouteMapCache.shared.store(packet, frame: self.frame, source: self.source, node: node, style: self.style, fine: self.fine)
                 return packet
             }
             DispatchQueue.main.async {
