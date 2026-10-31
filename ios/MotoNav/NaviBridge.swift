@@ -51,6 +51,7 @@ final class NaviBridge: NSObject, ObservableObject {
     @Published var camRaw = "（还没收到电子眼信息）"
     @Published var extraInfo = ""
     @Published private(set) var crossImage: UIImage?  // v0.15.2 路口放大图（手机导航画面自己画，同时发给圆屏）
+    private var crossId = 0
     @Published var showArrived = false              // 刚到达目的地（手机和圆屏显示“已到达”4 秒）
     private var arriveSeq = 0
     // iOS v0.3 选路线
@@ -1160,7 +1161,6 @@ extension NaviBridge {
     // 高德只在自己的导航画面不画放大图时才把图交出来（NaviScreen 里 showCrossImage = false），
     // 所以手机上由 NaviScreen 自己显示 crossImage；圆屏收 300×192 的 JPEG（大块数据类型 6，'J' '1' + JPEG）。
     static let crossBulkType = 6
-    private var crossId = 0
 
     func mnCrossShow(_ m: AMapNaviDriveManager, image: UIImage?) {
         guard let image = image else { return }
