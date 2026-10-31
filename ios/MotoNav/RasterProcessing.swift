@@ -80,7 +80,7 @@ enum AmapCapturePolicy {
             samples += 1
             if AmapBuildings.colorDifference(a[i], b[i]) >= 8 { changed += 1 }
         }
-        return changed * 1000 <= samples
+        return changed * 100 <= samples
     }
     static func completed(_ result: AmapBuildings.Result) -> Bool { result.buildings > 0 && result.roofPixels > 0 }
 }

@@ -146,11 +146,11 @@ final class AmapCaptureHost: NSObject {
                     }
                     let projection = [Double(tl.x) * sx, Double(tl.y) * sy, Double(tr.x) * sx, Double(bl.y) * sy]
                     // 高德地图块是移动镜头后才陆续下载的：截早了会有空白区域，还会被存进沿线离线包。
-                    // 底图要等前后两张截图基本一样（加载完了）才用；10 次还没稳定就算失败，保留已有地图。
-                    if n != 600 {
+                    // 底图等前后两张截图基本一样（加载完了）再用；最多再等 5 次，仍在变化就用最后一张
+                    // （0.15.9 曾在这里直接算失败，结果圆屏一直收不到地图、不显示小地图）。
+                    if n != 600, self.settleTries < 5 {
                         if let previous = self.settle, AmapCapturePolicy.settled(previous, pixels) {
                         } else {
-                            guard self.settleTries < 10 else { throw MapProcessingError.invalid("高德地图还没加载完，稍后重试") }
                             self.settle = pixels; self.settleTries += 1
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.snapshot(id, frame: frame, x: x, y: y, n: n) }; return
                         }
