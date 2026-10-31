@@ -154,6 +154,55 @@ void drawDestBlip(float cx, float cy, float sc, float cs, float sn) {
   if (!outside) aaDisc(px, py, 3, C_BLACK);
 }
 
+// v7.13 路况颜色，和高德一样：极其畅通深绿、畅通绿、缓行黄、拥堵红、严重拥堵深红；0 = 不上色
+uint16_t trafColor(int st) {
+  switch (st) {
+    case 6: return 0x0C47; case 1: return 0x2E09; case 2: return 0xFDA0;
+    case 3: return 0xE8E4; case 4: return 0x9000; default: return 0;
+  }
+}
+
+// v7.13 全程路况环：平时的行程环（灰 = 走过）把没走的部分按路况上色，没有路况数据的地方浅灰。
+// 一次扫完环上的像素，每个角度查表取颜色（1024 格，一格约 1.4 像素）。转弯倒计时环出现时不画（外圈让给倒计时）。
+#define TRIP_NODATA_C 0x8C71
+void drawTripTraffic(float p) {
+  if (p < 0 || trafN == 0 || !routeCum || routeN < 2 || routeFrame != posFrame || !ringLut) return;
+  const long total = progDone + tripRemainM;
+  if (total < 300) return;
+  uint16_t *fb = gfx->getFramebuffer();
+  if (!fb) return;
+  static uint16_t col[1024];
+  const float u = routeProg >= 0 ? routeProg : 0;
+  const int i0 = min((int)u, routeN - 2);
+  const float curM = routeCum[i0] + (u - i0) * (routeCum[i0 + 1] - routeCum[i0]);   // 现在在这条路线上走到第几米
+  const int k0 = (int)ceilf(p * 1024);
+  for (int k = 0; k < 1024; k++) col[k] = k < k0 ? 0 : TRIP_NODATA_C;
+  for (int i = 0; i < trafN; i++) {
+    const uint16_t c = trafColor(trafS[i]);
+    if (!c) continue;
+    // 路况按“离路线起点的米数”给；换算成环上的位置：现在的白点 + 往前多少米 / 全程
+    int a = (int)ceilf((p + (trafA[i] - curM) / total) * 1024), b = (int)ceilf((p + (trafB[i] - curM) / total) * 1024);
+    if (a < k0) a = k0;
+    if (b > 1024) b = 1024;
+    for (int k = a; k < b; k++) col[k] = c;
+  }
+  const float rIn = RING_R - TRIP_H, rOut = RING_R + TRIP_H;
+  int b0 = (int)floorf(rIn - 1) - RLUT_MIN, b1 = (int)ceilf(rOut + 1) - RLUT_MIN;
+  if (b0 < 0) b0 = 0;
+  if (b1 > RLUT_N) b1 = RLUT_N;
+  for (int i = ringOff[b0]; i < ringOff[b1]; i++) {
+    const RingPix &e = ringLut[i];
+    const uint16_t c = col[e.ang >> 6];
+    if (!c) continue;
+    const float r = e.r8 * (1.0f / 256);
+    float ar = fminf(r - rIn + 0.5f, rOut - r + 0.5f);
+    if (ar <= 0) continue;
+    const int t = ar >= 1 ? 255 : (int)(ar * 255);
+    uint16_t &px = fb[e.idx];
+    px = t >= 255 ? c : blend565(px, c, t);
+  }
+}
+
 // v5.0 路程（米）→ 路线上的位置（段号 + 段内比例）
 float routeUAt(float m) {
   if (!routeCum || routeN < 2) return 0;
@@ -171,8 +220,8 @@ void drawTraffic(float cx, float cy, float sc, float cs, float sn, float viewR, 
   for (int i = 0; i < trafN; i++) {
     float a = fmaxf(routeUAt(trafA[i]), from), b = routeUAt(trafB[i]);
     if (b <= a) continue;
-    if (trafS[i] < 1) continue;
-    uint16_t c = trafS[i] >= 4 ? 0x9000 : trafS[i] == 3 ? 0xE8E4 : trafS[i] == 2 ? 0xFDA0 : 0x1D65;   // 深红 / 红 / 黄 / 绿（v7.13 畅通）
+    const uint16_t c = trafColor(trafS[i]);
+    if (!c) continue;
     drawRouteRange(a, b, cx, cy, sc, cs, sn, viewR, w0, w1, C_ROUTE2, c);
   }
 }

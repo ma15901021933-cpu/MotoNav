@@ -173,7 +173,7 @@ void drawRingLayer(bool track, float prog, int thick, uint16_t pcol, bool over, 
     aaDisc(CX, CX - RING_R, h, pcol);
     aaDisc(CX + RING_R * sinf(a), CX - RING_R * cosf(a), h, pcol);
   }
-  if (trip >= 0) drawTripDot(trip);
+  if (trip >= 0) { drawTripTraffic(trip); drawTripDot(trip); }   // v7.13 没走的部分按路况上色
 }
 
 // 边缘渐暗：半径 r0~r1 之间越往外越暗；暗度按 “半径平方” 查表（表放在芯片内部内存）

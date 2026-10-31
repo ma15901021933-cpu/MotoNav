@@ -86,7 +86,7 @@ struct Bulk {
   int id; uint32_t total; uint16_t parts; uint16_t got; bool done;
   uint8_t mask[512];        // 每片一位，最多 4096 片
 };
-Bulk bulks[6];              // 下标 1 = 地图块，2 = 路线，3 = 图片地图（v2.5），4 = 原路线（v4.4），5 = 播报声音（v7.13）
+Bulk bulks[7];              // 下标 1 = 地图块，2 = 路线，3 = 图片地图（v2.5），4 = 原路线（v4.4），5 = 播报声音、6 = 路口放大图（v7.13）
 
 // ---- v4.4 原路线（导入的高德分享路线）：导航时画成一条淡色细线，走错路时能看到原来该走哪 ----
 #define GHOST_PTS 6000
@@ -138,7 +138,7 @@ float routeProg = -1;             // v3.0 车在路线上走到哪了：段号 +
 float *routeCum = nullptr;        // v5.0 每个路线点离起点的路程（米），给路况颜色用
 uint8_t *routeCurv = nullptr;     // v6.1 每个路线点的弯急程度：0 直/缓，1 中弯，2 急弯
 // v5.0 路况：缓行/拥堵的路段（离起点的米数），"#u,起,止,状态,..."；状态 2 缓行 3 拥堵 4 严重拥堵
-// v7.13 也收 1 畅通（绿色，和高德一样），路段多了一些
+// v7.13 也收 1 畅通（绿）、6 极其畅通（深绿），和高德一样；5 内部道路不上色
 #define TRAF_MAX 64
 int trafN = 0;
 int32_t trafA[TRAF_MAX], trafB[TRAF_MAX];

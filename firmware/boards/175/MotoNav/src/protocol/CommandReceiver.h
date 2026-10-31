@@ -10,6 +10,7 @@ void resetNavState() {
   ghostN = 0;                                           // v4.4
   cruiseOn = false;                                     // v4.8
   trafN = 0; rerouteAt = 0; fasterAt = 0; gpsWeak = false;   // v5.0
+  jctOn = false;                                        // v7.13 路口放大图
   speedKmh = -1;
   hasCam = false;
   laneN = 0;
@@ -341,6 +342,7 @@ void handleText(const String &m) {
     }
     navDirty = true; return;
   }
+  if (m == "#J,0") { jctOn = false; navDirty = true; return; }   // v7.13 收起路口放大图
   if (m.startsWith("#NU,")) {                            // v7.13 上北下南
     const bool on = m.substring(4).toInt() != 0;
     if (on != northUp) {

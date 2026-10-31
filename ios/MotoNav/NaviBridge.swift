@@ -1,6 +1,7 @@
 import Foundation
 import ObjectiveC
 import CoreLocation
+import UIKit
 
 /// 版本：跟随 App 版本（见 Config.swift）
 ///
@@ -49,6 +50,7 @@ final class NaviBridge: NSObject, ObservableObject {
     @Published var laneRaw = "（还没收到车道信息）"
     @Published var camRaw = "（还没收到电子眼信息）"
     @Published var extraInfo = ""
+    @Published private(set) var crossImage: UIImage?  // v0.15.2 路口放大图（手机导航画面自己画，同时发给圆屏）
     @Published var showArrived = false              // 刚到达目的地（手机和圆屏显示“已到达”4 秒）
     private var arriveSeq = 0
     // iOS v0.3 选路线
@@ -428,6 +430,7 @@ final class NaviBridge: NSObject, ObservableObject {
         navigating = false
         info = text
         shownDir = ""; shownDist = -1
+        crossImage = nil                            // 圆屏导航结束时自己清掉放大图
         clearSuggest()
         if arrived {
             let minutes = max(1,Int(Date().timeIntervalSince(tripStarted)/60))
@@ -753,7 +756,7 @@ final class NaviBridge: NSObject, ObservableObject {
 
     // MARK: - 路况、重新规划、GPS、更快路线
 
-    /// 路况：和高德一样上色（1 畅通、2 缓行、3 拥堵、4 严重拥堵；未知不发）："#u,起点米,终点米,状态,..."（米 = 离路线起点）
+    /// 路况：和高德一样上色（1 畅通、2 缓行、3 拥堵、4 严重拥堵、6 极其畅通；未知、内部道路不发）："#u,起点米,终点米,状态,..."（米 = 离路线起点）
     private func pushTraffic(_ list: [AMapNaviTrafficStatus]?) {
         lastTrafficAt = Date()
         guard let list = list ?? manager.getTrafficStatuses() else { return }
@@ -761,7 +764,7 @@ final class NaviBridge: NSObject, ObservableObject {
         var pos = 0
         for o in list {
             let len = o.length, st = o.status.rawValue
-            if st >= 1 && st <= 4 && len > 0 {
+            if (st >= 1 && st <= 4 || st == 6) && len > 0 {      // 6 极其畅通：圆屏画深绿
                 if let last = segs.last, last[2] == st, last[1] >= pos - 5 { segs[segs.count - 1][1] = pos + len }
                 else { segs.append([pos, pos + len, st]) }
             }
@@ -1151,6 +1154,42 @@ extension NaviBridge {
     @objc(driveManagerHideLaneInfo:)
     func mnLaneHide(_ m: AMapNaviDriveManager) {
         if lastLaneMsg != "#j" { lastLaneMsg = "#j"; BleLink.shared.send("#j") }
+    }
+
+    // MARK: - 路口放大图（v0.15.2）
+    // 高德只在自己的导航画面不画放大图时才把图交出来（NaviScreen 里 showCrossImage = false），
+    // 所以手机上由 NaviScreen 自己显示 crossImage；圆屏收 300×192 的 JPEG（大块数据类型 6，'J' '1' + JPEG）。
+    static let crossBulkType = 6
+    private var crossId = 0
+
+    func mnCrossShow(_ m: AMapNaviDriveManager, image: UIImage?) {
+        guard let image = image else { return }
+        crossImage = image
+        guard let jpeg = Self.crossJpeg(image) else { return }
+        crossId = (crossId + 1) & 0xFF
+        var d = Data([UInt8(ascii: "J"), UInt8(ascii: "1")])
+        d.append(jpeg)
+        BleLink.shared.sendBulk(type: Self.crossBulkType, id: crossId, data: d)
+    }
+
+    func mnCrossHide(_ m: AMapNaviDriveManager) {
+        guard crossImage != nil else { return }
+        crossImage = nil
+        BleLink.shared.send("#J,0")
+    }
+
+    /// 缩到圆屏用的 300×192（高德原图宽:高 = 25:16），普通基线 JPEG（圆屏 ROM 解码器不支持渐进式）
+    static func crossJpeg(_ image: UIImage) -> Data? {
+        let size = CGSize(width: 300, height: 192)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1; format.opaque = true
+        let small = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: size))
+        }
+        for q in [0.6, 0.4, 0.25] as [CGFloat] {
+            if let d = small.jpegData(compressionQuality: q), d.count < 60000 { return d }
+        }
+        return nil
     }
 
     // 巡航：道路设施（可能也带摄像头）、前方电子眼、巡航信息

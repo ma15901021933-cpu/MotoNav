@@ -45,6 +45,7 @@ struct AMapDriveViewRep: UIViewRepresentable {
     func makeUIView(context: Context) -> AMapNaviDriveView {
         let v = AMapNaviDriveView(frame: .zero)
         v.delegate = controller.asDelegate
+        v.showCrossImage = false                       // v0.15.2 放大图交给 App：高德自己画时不给回调图片
         v.mapViewModeType = night ? .night : .day
         controller.view = v
         AMapNaviDriveManager.sharedInstance().addDataRepresentative(v)
@@ -74,6 +75,12 @@ struct NaviScreen: View {
         ZStack(alignment: .bottom) {
             AMapDriveViewRep(controller: drive, night: settings.paletteNight).ignoresSafeArea()
             VStack(spacing: 10) {
+                if let cross = navi.crossImage {            // v0.15.2 路口放大图（同时显示在圆屏上）
+                    Image(uiImage: cross).resizable().aspectRatio(25.0 / 16.0, contentMode: .fit)
+                        .frame(maxWidth: 360)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .padding(.horizontal, 16)
+                }
                 if navi.uiSuggestMin > 0 {                  // iOS v0.2 高德发现更快的路线
                     HStack {
                         Text("发现更快路线，能省约 \(navi.uiSuggestMin) 分钟")

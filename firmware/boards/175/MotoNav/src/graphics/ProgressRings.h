@@ -210,6 +210,7 @@ void drawTripDot(float p) {
 void drawTripRing(float p) {
   fillRingBand(0, 1, RING_R - TRIP_H, RING_R + TRIP_H, TRIP_LEFT_C);
   if (p > 0.002f) fillRingBand(0, p, RING_R - TRIP_H, RING_R + TRIP_H, TRIP_DONE_C);
+  drawTripTraffic(p);                                    // v7.13 没走的部分按路况上色
   drawTripDot(p);
 }
 
