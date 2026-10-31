@@ -1,6 +1,7 @@
 import Foundation
 import ObjectiveC
 import CoreLocation
+import UIKit
 
 /// 版本：跟随 App 版本（见 Config.swift）
 ///
@@ -28,7 +29,7 @@ final class NaviBridge: NSObject, ObservableObject {
 
     @Published var calculating = false
     @Published var routeReady = false
-    @Published var navigating = false
+    @Published var navigating = false { didSet { keepScreenAwake() } }
     @Published var info = "（还没开始导航）"
     @Published var routeSummary = ""
     // 给界面看
@@ -69,7 +70,7 @@ final class NaviBridge: NSObject, ObservableObject {
     private var planSeq = 0
     private var lastRouteDoneAt = Date.distantPast
     // iOS v0.3 巡航
-    @Published var cruising = false
+    @Published var cruising = false { didSet { keepScreenAwake() } }
     @Published var cruiseRaw = "（还没收到巡航数据）"
 
     private var manager: AMapNaviDriveManager { AMapNaviDriveManager.sharedInstance() }
@@ -90,6 +91,11 @@ final class NaviBridge: NSObject, ObservableObject {
     }
 
     func acceptsCallback(_ token: UInt64) -> Bool { arrival.acceptsCallbacks(token) }
+    /// v0.15.6 导航、巡航时手机不自动锁屏：圆屏的地图要靠 App 在前台截高德地图，锁屏后只能用提前准备好的沿线地图。
+    private func keepScreenAwake() {
+        UIApplication.shared.isIdleTimerDisabled = navigating || cruising || WebMotorSession.shared.running
+    }
+
     func performCallback(_ token: UInt64, _ body: (NaviBridge) -> Void) {
         dispatchPrecondition(condition: .onQueue(.main))
         guard arrival.acceptsCallbacks(token) else { return }
@@ -417,7 +423,10 @@ final class NaviBridge: NSObject, ObservableObject {
         let arrived = msg == "A,0"
         if arrived {
             guard let event = event, arrival.complete(token, event: event) else { return }
-        } else { arrival.cancel(token) }
+        } else {
+            arrival.cancel(token)
+            Speech.shared.stopNow()                     // v0.15.6 退出导航：排着队的播报不再念（到达时让“已到达”念完）
+        }
         RideRecorder.shared.finish()
         LocationService.shared.setPrecise(false)
         MapFeeder.shared.onNaviEnd()
@@ -844,6 +853,7 @@ final class NaviBridge: NSObject, ObservableObject {
         if !cruising { return }
         arrival.cancel(arrival.generation)
         cruising = false
+        Speech.shared.stopNow()                         // v0.15.6 结束巡航：排着队的播报不再念
         RideRecorder.shared.finish()
         cruiseIdle.stop()
         MapFeeder.shared.onNaviEnd()
