@@ -28,6 +28,9 @@ let long = TrafficBar.message(many, routeLength: 20000, travelled: 10000)
 check(long.count <= TrafficBar.maxChars, "message fits in one BLE write")
 check(long.hasPrefix("#u,10000,10100,1"), "nearest section ahead comes first: \(long.prefix(30))")
 
+let small = TrafficBar.message(many, routeLength: 20000, travelled: 10000, maxChars: 182)
+check(small.count <= 182 && small.hasPrefix("#u,10000,10100,1"), "message fits a smaller BLE packet: \(small.count)")
+
 // Nothing usable clears the screen's traffic.
 check(TrafficBar.message([(500, 0)], routeLength: 500, travelled: 0) == "#u", "unknown only clears traffic")
 print("Traffic bar: \(checks) checks passed")

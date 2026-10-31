@@ -8,7 +8,8 @@ enum TrafficBar {
     /// segments：高德给的一段段（长度米, 状态），按路线顺序。
     /// 如果加起来比全程短，说明是从当前位置往后算的：整体挪到路线末尾对齐。
     /// 已经走过的不发，留给前方（一条消息最多 480 字）。
-    static func message(_ segments: [(length: Int, status: Int)], routeLength: Int, travelled: Int) -> String {
+    /// maxChars：蓝牙一包放得下的长度，超出的部分手机会整条丢掉，圆屏就一直停在旧路况。
+    static func message(_ segments: [(length: Int, status: Int)], routeLength: Int, travelled: Int, maxChars: Int = maxChars) -> String {
         let sum = segments.reduce(0) { $0 + max(0, $1.length) }
         var pos = routeLength > 0 && sum < routeLength - 30 ? routeLength - sum : 0
         var segs: [[Int]] = []

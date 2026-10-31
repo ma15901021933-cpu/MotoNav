@@ -514,7 +514,7 @@ final class NaviBridge: NSObject, ObservableObject {
             if lightBase >= 0 { pushLight(max(0, Int((Double(lightBase) - speedMps * Date().timeIntervalSince(lightAt)).rounded()))) }
         }
         trackCamera()
-        if Date().timeIntervalSince(lastTrafficAt) > 30 { pushTraffic(nil) }   // v0.15.4 60 → 30 秒
+        if Date().timeIntervalSince(lastTrafficAt) > 10 { pushTraffic(nil) }   // v0.15.4 60 → 30 秒；v0.15.10 → 10 秒（只读高德已有数据，变了才发）
     }
 
     // MARK: - 路口实际转弯角度
@@ -764,7 +764,7 @@ final class NaviBridge: NSObject, ObservableObject {
 
     /// 路况：和高德一样上色，消息格式见 TrafficBar（米 = 离路线起点）。
     /// v0.15.4 明确取整条路线（getTrafficStatuses 只说是“当前道路”，可能从现在的位置算起，圆屏会把新路况画到车后面）；
-    /// 已走过的不发；每 30 秒重取一次，高德回调路况变化时也重取。
+    /// 已走过的不发；每 10 秒重取一次，高德回调路况变化时也重取。
     private func pushTraffic(_ list: [AMapNaviTrafficStatus]?) {
         lastTrafficAt = Date()
         let length = manager.naviRoute?.routeLength ?? 0
@@ -772,7 +772,8 @@ final class NaviBridge: NSObject, ObservableObject {
         if length > 0 { whole = manager.getTrafficStatuses(withStartPosition: 0, distance: Int32(length)) }
         guard let src = (whole?.isEmpty == false ? whole : nil) ?? list ?? manager.getTrafficStatuses() else { return }
         let travelled = length > 0 && uiRemainM > 0 ? max(0, length - uiRemainM) : 0
-        let m = TrafficBar.message(src.map { (length: $0.length, status: $0.status.rawValue) }, routeLength: length, travelled: travelled)
+        let m = TrafficBar.message(src.map { (length: $0.length, status: $0.status.rawValue) }, routeLength: length, travelled: travelled,
+                                    maxChars: min(TrafficBar.maxChars, BleLink.shared.maxWrite))
         if m != lastTrafficMsg { lastTrafficMsg = m; BleLink.shared.send(m) }
     }
 
