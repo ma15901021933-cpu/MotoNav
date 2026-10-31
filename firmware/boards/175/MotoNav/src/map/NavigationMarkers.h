@@ -171,7 +171,8 @@ void drawTraffic(float cx, float cy, float sc, float cs, float sn, float viewR, 
   for (int i = 0; i < trafN; i++) {
     float a = fmaxf(routeUAt(trafA[i]), from), b = routeUAt(trafB[i]);
     if (b <= a) continue;
-    uint16_t c = trafS[i] >= 4 ? 0x9000 : trafS[i] == 3 ? 0xE8E4 : 0xFDA0;
+    if (trafS[i] < 1) continue;
+    uint16_t c = trafS[i] >= 4 ? 0x9000 : trafS[i] == 3 ? 0xE8E4 : trafS[i] == 2 ? 0xFDA0 : 0x1D65;   // 深红 / 红 / 黄 / 绿（v7.13 畅通）
     drawRouteRange(a, b, cx, cy, sc, cs, sn, viewR, w0, w1, C_ROUTE2, c);
   }
 }

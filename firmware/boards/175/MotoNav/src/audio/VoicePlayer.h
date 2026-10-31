@@ -13,7 +13,7 @@ int voiceVolume = 80;                  // 0–100，存在 Preferences "voxvol"
 String pendingVoiceAck;                // 单独一条，不和地图的 K 确认互相覆盖
 volatile int voiceEndedId = -1;        // 播放任务写，主循环发 "VE,编号"
 volatile bool voiceStopReq = false;    // 手机点了静音：停下正在放的，丢掉下一句
-volatile bool voiceToneReq = false;    // "#VT" 喇叭自检：两声短“嘀”，不需要手机合成声音
+volatile uint8_t voiceToneReq = 0;     // 2 = "#VT" 喇叭自检（两声“嘀”）；1 = 按键调音量的提示音（一声短“嘀”）
 
 // 收齐的一句放进 pending；正在放的那句在 playing。新的一句只替换还没开始放的那句。
 static uint8_t *voicePending = nullptr, *voicePlaying = nullptr;
@@ -47,6 +47,20 @@ void voiceSetVolume(int v) {
   if (voiceReady) es8311Write(0x32, voiceVolume ? voiceVolume * 256 / 100 - 1 : 0);
 }
 
+static void voiceSaveVolume(int v) {
+  v = constrain(v, 0, 100);
+  if (v == voiceVolume) return;
+  voiceSetVolume(v);
+  Preferences pr; pr.begin("motonav", false); pr.putInt("voxvol", voiceVolume); pr.end();
+}
+
+// 圆屏按键调音量：每次 10，响一声短“嘀”听新音量（音量 0 时就不响了）。
+void voiceStep(int delta) {
+  voiceSaveVolume(voiceVolume + delta);
+  Serial.printf("VOICE volume=%d (button)\n", voiceVolume);
+  if (voiceReady && voiceVolume) { voiceToneReq = 1; xTaskNotifyGive(voiceTask); }
+}
+
 static void voiceWrite(const int16_t *stereo, size_t frames) {
   const uint8_t *p = (const uint8_t *)stereo;
   size_t left = frames * 4;
@@ -57,10 +71,10 @@ static void voiceWrite(const int16_t *stereo, size_t frames) {
   }
 }
 
-static void voiceTone(int16_t *stereo) {          // 880 Hz，200 ms × 2，中间停 120 ms
+static void voiceTone(int16_t *stereo, int beeps, int ms) {   // 880 Hz，每声 ms 毫秒，中间停 120 ms
   uint32_t t = 0;
-  for (int beep = 0; beep < 2; beep++) {
-    for (int k = 0; k < 2 * VoiceClip::RATE / 10 / 256; k++) {
+  for (int beep = 0; beep < beeps; beep++) {
+    for (int k = 0; k < VoiceClip::RATE * ms / 1000 / 256; k++) {
       for (int i = 0; i < 256; i++, t++) stereo[2 * i] = stereo[2 * i + 1] = (int16_t)(12000 * sinf(2 * PI * 880 * t / VoiceClip::RATE));
       voiceWrite(stereo, 256);
     }
@@ -69,16 +83,23 @@ static void voiceTone(int16_t *stereo) {          // 880 Hz，200 ms × 2，中�
   }
 }
 
+// 功放刚打开要一段时间才稳定，直接放会把每句头一个字吃掉：先送 200 ms 静音再开始放。
+static void voicePowerUp(int16_t *stereo) {
+  digitalWrite(PA, HIGH);
+  memset(stereo, 0, 512 * sizeof(int16_t));
+  for (int i = 0; i < VoiceClip::RATE / 5 / 256; i++) voiceWrite(stereo, 256);
+}
+
 static void voiceLoop(void *) {
   static int16_t mono[256], stereo[512];
   for (;;) {
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     bool speaking = false;
-    if (voiceToneReq) {
-      voiceToneReq = false;
-      digitalWrite(PA, HIGH); speaking = true; delay(20);
-      Serial.println("VOICE tone test");
-      voiceTone(stereo);
+    if (const uint8_t tone = voiceToneReq) {
+      voiceToneReq = 0;
+      voicePowerUp(stereo); speaking = true;
+      Serial.printf("VOICE tone %d\n", tone);
+      voiceTone(stereo, tone, tone == 2 ? 200 : 80);
     }
     for (;;) {
       int id;
@@ -91,7 +112,7 @@ static void voiceLoop(void *) {
       voiceStopReq = false;
       VoiceClip clip;
       if (!clip.begin(voicePlaying, size)) { voiceEndedId = id; continue; }
-      if (!speaking) { digitalWrite(PA, HIGH); speaking = true; delay(20); }   // 功放只在播报时打开，平时不出底噪
+      if (!speaking) { voicePowerUp(stereo); speaking = true; }   // 功放只在播报时打开，平时不出底噪
       Serial.printf("VOICE play id=%d samples=%lu\n", id, (unsigned long)clip.samples());
       size_t n;
       while (!voiceStopReq && (n = clip.decode(mono, 256)) > 0) {
@@ -153,7 +174,7 @@ bool voiceQueue(const uint8_t *data, uint32_t size, int id) {
 
 void handleVoiceText(const String &m) {
   if (m == "#VT") {                                    // 喇叭自检
-    if (voiceReady) { voiceToneReq = true; xTaskNotifyGive(voiceTask); }
+    if (voiceReady) { voiceToneReq = 2; xTaskNotifyGive(voiceTask); }
     Serial.printf("VOICE test ready=%d volume=%d\n", voiceReady, voiceVolume);
     return;
   }
@@ -166,11 +187,7 @@ void handleVoiceText(const String &m) {
     return;
   }
   if (m.startsWith("#VV,")) {                          // 音量
-    int v = constrain(m.substring(4).toInt(), 0, 100);
-    if (v != voiceVolume) {
-      voiceSetVolume(v);
-      Preferences pr; pr.begin("motonav", false); pr.putInt("voxvol", voiceVolume); pr.end();
-    }
+    voiceSaveVolume(m.substring(4).toInt());
   }
 }
 

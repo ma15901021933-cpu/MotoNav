@@ -517,6 +517,8 @@ struct ContentView: View {
                 .pickerStyle(.segmented)
                 Toggle("清爽模式", isOn: $settings.clean).foregroundColor(.white).tint(ContentView.pink)
                 Text("清爽模式：地图保留，去掉红绿灯、电子眼、安全提示、测速牌和行程信息").font(.caption2).foregroundColor(ContentView.sub)
+                Toggle("上北下南", isOn: $settings.northUp).foregroundColor(.white).tint(ContentView.pink)
+                Text(settings.northUp ? "地图固定北在上，车头箭头跟着转" : "车头朝上，地图跟着转").font(.caption2).foregroundColor(ContentView.sub)
             }
             Text("夜间配色").foregroundColor(.white)
             Picker("夜间配色", selection: $settings.nightMode) {

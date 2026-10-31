@@ -146,7 +146,7 @@ void sendPendingAck();
 bool mapModeActive();
 static void viceBlendPixel(uint16_t *row, int x, uint16_t color, float coverage);
 void mapFillPoly(const float *xs, const float *ys, int n, uint16_t c);
-void drawPlayer(float x, float y);
+void drawPlayer(float x, float y, float deg);
 void fillCapRows(int y0, int y1, uint16_t c);
 void capLine(int y, int thick, uint16_t c);
 void printOutlined(const String &t, int x, int y, int size, uint16_t col);

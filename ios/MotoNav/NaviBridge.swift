@@ -753,7 +753,7 @@ final class NaviBridge: NSObject, ObservableObject {
 
     // MARK: - 路况、重新规划、GPS、更快路线
 
-    /// 路况：只发不畅通的路段（2 缓行、3 拥堵、4 严重拥堵）："#u,起点米,终点米,状态,..."（米 = 离路线起点）
+    /// 路况：和高德一样上色（1 畅通、2 缓行、3 拥堵、4 严重拥堵；未知不发）："#u,起点米,终点米,状态,..."（米 = 离路线起点）
     private func pushTraffic(_ list: [AMapNaviTrafficStatus]?) {
         lastTrafficAt = Date()
         guard let list = list ?? manager.getTrafficStatuses() else { return }
@@ -761,7 +761,7 @@ final class NaviBridge: NSObject, ObservableObject {
         var pos = 0
         for o in list {
             let len = o.length, st = o.status.rawValue
-            if st >= 2 && st <= 4 && len > 0 {
+            if st >= 1 && st <= 4 && len > 0 {
                 if let last = segs.last, last[2] == st, last[1] >= pos - 5 { segs[segs.count - 1][1] = pos + len }
                 else { segs.append([pos, pos + len, st]) }
             }

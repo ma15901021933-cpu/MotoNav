@@ -13,14 +13,14 @@ void drawMapFrame() {
   // 位置：按车速和转弯速度往前推算（v6.7 沿弧线，再加一点提前量），让画面连续移动、少“慢半拍”
   float cx, cy, hPred;
   predictPose(t, leadMs / 1000.0f, cx, cy, hPred);
-  viewTargetHdg = hPred;
+  viewTargetHdg = northUp ? 0 : hPred;                 // v7.13 上北下南时地图不转，只转车头箭头
   if (corrAt) {                                         // v2.6 平滑修正
     float f = fmaxf(0, 1 - (t - corrAt) / 400.0f);
     cx += corrX * f; cy += corrY * f;
   }
   // 朝向平滑转动，缩放跟车速（越快看得越远）
-  if (!viewInit) { viewHdg = hPred; viewInit = true; }
-  float dh = hPred - viewHdg;
+  if (!viewInit) { viewHdg = viewTargetHdg; viewInit = true; }
+  float dh = viewTargetHdg - viewHdg;
   while (dh > 180) dh -= 360;
   while (dh < -180) dh += 360;
   // v3.7 按时间平滑转动（和帧率无关）：时间常数 0.35 秒，最快每秒转 70 度。
@@ -103,7 +103,7 @@ void drawMapFrame() {
   if (!dragon && !cleanOn && !cruiseOn) drawMapLights(cx, cy, sc, cs, sn);   // v3.2 路线上的红绿灯（v4.9 清爽模式不画；v7.6 巡航不画）
   if (!dragon) drawMapCams(cx, cy, sc, cs, sn);                      // v3.5 电子眼
   if (!cruiseOn) drawDestBlip(cx, cy, sc, cs, sn);      // v2.9 目的地标记（v7.6 巡航没有目的地）
-  drawPlayer(CX, MAP_PY);
+  drawPlayer(CX, MAP_PY, hPred - viewHdg);
   profMark(3);
   {
     int st = styleIdx();                                // v6.1 纸地图、蓝图、掌机像素不压暗边缘

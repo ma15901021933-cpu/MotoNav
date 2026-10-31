@@ -10,11 +10,16 @@ void sendPendingAck() {
     txChar->notify();
     txChar->setValue((uint8_t *)"CAP,HID,1", 9); txChar->notify();
     txChar->setValue((uint8_t *)"CAP,LYR,1", 9); txChar->notify();
-    if (voiceReady) { txChar->setValue((uint8_t *)"CAP,VOX,1", 9); txChar->notify(); }   // v7.13 能用圆屏喇叭播报
     pendingHidStatus = String("HID,") + (hidMusicMode ? 1 : 0) + "," + (hidMediaReady() ? 1 : 0);
     appleMedia.resend();
     pendingLyricsStatus = String("ML,") + (musicLyrics ? 1 : 0);
     pendingMediaStatus = String("AMC,") + appleMedia.controlMask();
+  }
+  // v7.13 能用圆屏喇叭播报。不挤在上面那串通知里（iPhone 会丢），单独每 5 秒发一次，手机重复收到无妨。
+  static uint32_t voiceCapAt = 0;
+  if (voiceReady && (!voiceCapAt || millis() - voiceCapAt > 5000)) {
+    voiceCapAt = millis() | 1;
+    txChar->setValue((uint8_t *)"CAP,VOX,1", 9); txChar->notify();
   }
   if (pendingLyricsStatus.length()) { txChar->setValue((uint8_t *)pendingLyricsStatus.c_str(), pendingLyricsStatus.length()); txChar->notify(); pendingLyricsStatus = ""; }
   if (pendingMediaStatus.length()) { txChar->setValue((uint8_t *)pendingMediaStatus.c_str(), pendingMediaStatus.length()); txChar->notify(); pendingMediaStatus = ""; }

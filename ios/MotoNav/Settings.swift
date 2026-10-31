@@ -73,6 +73,8 @@ final class Settings: ObservableObject {
     @Published var trail: Int { didSet { ud.set(trail, forKey: "map_trail"); BleLink.shared.send("#r,\(trail)") } }
     /// 清爽模式：小地图保留，去掉红绿灯、电子眼、安全提示、测速牌和行程信息
     @Published var clean: Bool { didSet { ud.set(clean, forKey: "clean_mode"); BleLink.shared.send(clean ? "#w,1" : "#w,0") } }
+    /// 小地图上北下南（地图不转，车头箭头转）；关掉 = 车头朝上
+    @Published var northUp: Bool { didSet { ud.set(northUp, forKey: "north_up"); BleLink.shared.send(northUp ? "#NU,1" : "#NU,0") } }
     /// 圆屏方向（度，0~359，顺时针）。iOS v0.5 起 360° 可调：发 "#R,最接近的90°档,角度"，
     /// 固件 v7.10.1 起解析第二项精确角度；旧固件只认第一项，转到最接近的 90°
     @Published var rotationDeg: Int { didSet { ud.set(rotationDeg, forKey: "screen_rot_deg"); sendRotation() } }
@@ -190,6 +192,7 @@ final class Settings: ObservableObject {
         mapSource = MapDefaults.source(ud)
         trail = ud.object(forKey: "map_trail") as? Int ?? 1
         clean = ud.bool(forKey: "clean_mode")
+        northUp = ud.object(forKey: "north_up") as? Bool ?? true
     }
 
     private var brightTimer: Timer?
@@ -221,6 +224,7 @@ final class Settings: ObservableObject {
         b.send(progressRing ? "#M1" : "#M0")
         b.send("#L\(leadMs)")
         b.send(clean ? "#w,1" : "#w,0")
+        b.send(northUp ? "#NU,1" : "#NU,0")
         sendScreenVolume()
     }
 

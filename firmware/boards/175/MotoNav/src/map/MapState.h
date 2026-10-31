@@ -138,7 +138,8 @@ float routeProg = -1;             // v3.0 车在路线上走到哪了：段号 +
 float *routeCum = nullptr;        // v5.0 每个路线点离起点的路程（米），给路况颜色用
 uint8_t *routeCurv = nullptr;     // v6.1 每个路线点的弯急程度：0 直/缓，1 中弯，2 急弯
 // v5.0 路况：缓行/拥堵的路段（离起点的米数），"#u,起,止,状态,..."；状态 2 缓行 3 拥堵 4 严重拥堵
-#define TRAF_MAX 40
+// v7.13 也收 1 畅通（绿色，和高德一样），路段多了一些
+#define TRAF_MAX 64
 int trafN = 0;
 int32_t trafA[TRAF_MAX], trafB[TRAF_MAX];
 uint8_t trafS[TRAF_MAX];
@@ -158,4 +159,5 @@ float corrX = 0, corrY = 0;          // v2.6 位置偏差（米），逐渐减�
 unsigned long corrAt = 0;
 float hdgRate = 0;                   // v6.7 正在转弯的速度（度/秒，顺时针为正）
 int leadMs = 300;                    // v6.7 预判提前量（毫秒）
+bool northUp = true;                 // v7.13 地图上北下南（手机设置 "#NU,1/0"），存在 Preferences "northup"
 float viewTargetHdg = 0;             // v6.7 地图朝向要追的目标（预判后的朝向）

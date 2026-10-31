@@ -177,9 +177,12 @@ void mapFillPoly(const float *xs, const float *ys, int n, uint16_t c) {
 }
 
 // 车头箭头（白色，深色描边）
-void drawPlayer(float x, float y) {
-  // v3.9 车头箭头缩小到原来的约 70%
-  const float T[4][2] = {{0, -13}, {-10, 10.5f}, {0, 5}, {10, 10.5f}};
+void drawPlayer(float x, float y, float deg) {
+  // v3.9 车头箭头缩小到原来的约 70%；v7.13 按 deg 转（上北下南时箭头指向实际行驶方向）
+  const float B[4][2] = {{0, -13}, {-10, 10.5f}, {0, 5}, {10, 10.5f}};
+  const float r = deg * PI / 180, c = cosf(r), s = sinf(r);
+  float T[4][2];
+  for (int i = 0; i < 4; i++) { T[i][0] = B[i][0] * c - B[i][1] * s; T[i][1] = B[i][0] * s + B[i][1] * c; }
   for (int pass = 0; pass < 2; pass++) {
     float k = pass == 0 ? 1.35f : 1.0f;
     uint16_t c = pass == 0 ? C_BLACK : C_WHITE;

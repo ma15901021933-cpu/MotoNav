@@ -1,6 +1,6 @@
 #pragma once
 // 版本、诊断选项及路口灯状态，保持原先位于 Arduino.h 之前的顺序。
-#define FW_VERSION "v7.13.0-voice.1-175c"
+#define FW_VERSION "v7.13.0-voice.5-175c"
 #include "../../TrafficLightLab.h"
 TrafficLightLab trafficLightLab;
 TrafficLightFrame trafficLightFrame;

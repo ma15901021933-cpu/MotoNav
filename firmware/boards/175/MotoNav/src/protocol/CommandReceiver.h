@@ -341,6 +341,14 @@ void handleText(const String &m) {
     }
     navDirty = true; return;
   }
+  if (m.startsWith("#NU,")) {                            // v7.13 上北下南
+    const bool on = m.substring(4).toInt() != 0;
+    if (on != northUp) {
+      northUp = on; viewInit = false;
+      Preferences pr; pr.begin("motonav", false); pr.putBool("northup", northUp); pr.end();
+    }
+    navDirty = true; return;
+  }
   if (m.startsWith("#w,")) { cleanOn = m.substring(3).toInt() != 0; navDirty = true; return; }   // v4.9 清爽模式
   if (m.startsWith("#z,")) {                             // v4.8 巡航模式开关
     cruiseOn = m.substring(3).toInt() != 0;
