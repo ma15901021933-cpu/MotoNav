@@ -183,8 +183,9 @@ final class MapFeeder: ObservableObject {
             MapPipelineTrace.event("movement-cancel", ["serial": requestSerial, "baseReady": fetchingBaseReady, "needsCoverage": needsCoverage, "nextBlock": changedNode, "kmh": kmh])
             workToken.cancel(); requestSerial += 1; fetching = false
         }
+        // 圆屏快开出当前这块地图时，取图失败后 3 秒就重试（平时 15 秒），否则圆屏上只剩一条路线
         let retryBuildings = buildingMode && !chunkBuildingsComplete && UIApplication.shared.applicationState == .active && Date().timeIntervalSince(lastBuildingTry) >= 60
-        if !fetching && (!haveChunk || distance > refresh || needsCoverage || changedNode || (node == nil && prepareEarly) || retryBuildings) && Date().timeIntervalSince(lastFetchFail) > 15 {
+        if !fetching && (!haveChunk || distance > refresh || needsCoverage || changedNode || (node == nil && prepareEarly) || retryBuildings) && Date().timeIntervalSince(lastFetchFail) > (needsCoverage ? 3 : 15) {
             let a = bearing * .pi / 180, ahead = kmh > 5 ? (satMode ? SAT_AHEAD : MapCoveragePolicy.lookahead(kmh: kmh, preferred: AHEAD)) : 0
             fetchChunk(f, node?.x ?? (x + sin(a) * ahead), node?.y ?? (y + cos(a) * ahead), node: node)
         }
@@ -378,9 +379,9 @@ final class MapFeeder: ObservableObject {
     /// iOS v0.6 首页用的一句话状态
     var shortStatus: String {
         if !enabled { return "已关闭" }
+        if status.hasPrefix("地图准备失败") { return "取图失败，稍后重试" }
+        if status.hasPrefix("正在准备") { return "正在准备附近地图" }
         if chunkAcked { return "圆屏已收到地图" }
-        if status.hasPrefix("地图下载失败") { return "下载失败，15 秒后重试" }
-        if status.hasPrefix("正在下载") { return "正在下载" }
         if haveChunk { return "已下载，等圆屏收" }
         return "导航时自动下载"
     }
