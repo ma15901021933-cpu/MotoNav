@@ -29,7 +29,6 @@
 #include "src/map/RouteRenderer.h"
 #include "src/audio/VoicePlayer.h"
 #include "src/input/Buttons.h"
-#include "src/map/JunctionView.h"
 #include "src/protocol/BulkReceiver.h"
 #include "src/power/BatteryPolling.h"
 #include "src/connectivity/Notifications.h"
@@ -76,7 +75,6 @@ void setup() {
   mapInit();                                                        // v2.0 小地图缓冲
   voiceInit();                                                      // v7.13 播报从圆屏喇叭出声
   buttonsInit();                                                    // v7.13 PWR / BOOT 调音量、切换上北下南
-  jctInit();                                                        // v7.13 路口放大图
   for (int i = 0; i < IMG_SLOTS; i++) {
     imgs[i].show = (uint8_t *)ps_malloc(IMG_MAX);
     imgs[i].recv = (uint8_t *)ps_malloc(IMG_MAX);

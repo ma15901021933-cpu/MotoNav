@@ -10,7 +10,6 @@ final class AMapNaviCameraInfo: NSObject {}
 final class AMapNaviTrafficFacilityInfo: NSObject {}
 final class AMapNaviCruiseInfo: NSObject {}
 final class AMapNaviTrafficStatus: NSObject {}
-final class UIImage: NSObject {}
 
 final class NaviBridge {
     let arrival = ArrivalPolicy()
@@ -43,6 +42,4 @@ final class NaviBridge {
     func mnCruiseCams(_ m: AMapNaviDriveManager, list: [AMapNaviTrafficFacilityInfo]?) { calls.append("mnCruiseCams") }
     func mnCruiseInfo(_ m: AMapNaviDriveManager, info c: AMapNaviCruiseInfo?) { calls.append("mnCruiseInfo") }
     func mnTraffic(_ m: AMapNaviDriveManager, status: [AMapNaviTrafficStatus]?) { calls.append("mnTraffic") }
-    func mnCrossShow(_ m: AMapNaviDriveManager, image: UIImage?) { calls.append("mnCrossShow") }
-    func mnCrossHide(_ m: AMapNaviDriveManager) { calls.append("mnCrossHide") }
 }

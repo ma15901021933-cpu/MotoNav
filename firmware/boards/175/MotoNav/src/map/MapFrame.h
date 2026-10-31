@@ -113,7 +113,6 @@ void drawMapFrame() {
   if (styleIdx() == ST_COMPASS) drawCompassRose(viewHdg);   // v6.1 罗盘刻度
   else if (!dragon) drawNorth(viewHdg);                              // v2.9 北向标记
   if (!dragon && !cleanOn) drawCamIcons(cx, cy, sc, cs, sn);       // v3.8 电子眼图标（v4.9 清爽模式不画）
-  drawJunction();                                       // v7.13 路口放大图：只盖地图，下面的车速、车道、转向、外圈照常画在上面
   profMark(5);
   unsigned long tMapDone = millis();                   // v2.6 统计：画地图用时
   mapMsAcc += tMapDone - t;

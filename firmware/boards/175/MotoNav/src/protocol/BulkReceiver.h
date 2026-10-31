@@ -6,7 +6,7 @@ void handleBulk(const uint8_t *d, int n) {
   int type = d[1], id = d[2];
   int parts = d[3] | (d[4] << 8), seq = d[5] | (d[6] << 8);
   uint32_t total = (uint32_t)rd32(d + 7), off = (uint32_t)rd32(d + 11);
-  if (type < 1 || type > JCT_BULK) return;
+  if (type < 1 || type > VOICE_BULK) return;
   Bulk &b = bulks[type];
   if (!b.buf || total == 0 || total > b.cap || parts == 0 || parts > 4096 || seq >= parts) return;
   if (id != b.id || total != b.total || parts != b.parts) {     // 新的一份：从头开始收
@@ -39,8 +39,6 @@ void handleBulk(const uint8_t *d, int n) {
       parseRoute(b.buf, total);
     } else if (type == 4) {
       parseGhost(b.buf, total);                        // v4.4 原路线
-    } else if (type == JCT_BULK) {                     // v7.13 路口放大图
-      if (!jctReceive(b.buf, total)) { b.done = false; b.got = 0; memset(b.mask, 0, sizeof(b.mask)); return; }
     } else {
       if (!parseRaster(b.buf,total)) {
         // 没有成功解码就不回“已确认”，并允许相同编号完整重发。

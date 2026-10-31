@@ -126,14 +126,4 @@ final class NaviSessionCallbacks: NSObject {
         deliver { bridge in bridge.mnTraffic(m, status: status) }
     }
 
-    @objc(driveManager:showCrossImage:)
-    func mnCrossShow(_ m: AMapNaviDriveManager, image: UIImage?) {
-        deliver { bridge in bridge.mnCrossShow(m, image: image) }
-    }
-
-    @objc(driveManagerHideCrossImage:)
-    func mnCrossHide(_ m: AMapNaviDriveManager) {
-        deliver { bridge in bridge.mnCrossHide(m) }
-    }
-
 }

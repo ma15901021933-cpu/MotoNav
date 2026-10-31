@@ -13,14 +13,11 @@ struct BleBulkWriteQueue {
     var queuedCount: Int { parts.count }
     /// 圆屏播报的声音（类型 5）插到最前面：导航提示不能排在一整张地图后面。
     static let urgentType = 5
-    /// 路口放大图（类型 6）排在声音后面、地图前面：到路口前要先看到。
-    static let junctionType = 6
     mutating func replace(type: Int, id: Int, packets: [Data]) {
         parts.removeAll { $0.type == type }
         latest[type] = id; acknowledged.removeValue(forKey: type)
         let fresh = packets.map { Part(type: type, id: id, data: $0) }
         if type == Self.urgentType { parts.insert(contentsOf: fresh, at: 0) }
-        else if type == Self.junctionType { parts.insert(contentsOf: fresh, at: parts.firstIndex { $0.type != Self.urgentType } ?? parts.count) }
         else { parts.append(contentsOf: fresh) }
     }
     mutating func next() -> Part? {

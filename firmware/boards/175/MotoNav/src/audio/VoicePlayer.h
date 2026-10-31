@@ -198,8 +198,7 @@ void voiceSerialPoll() {
     char c = Serial.read();
     if (c == '\r' || c == '\n') {
       line[len] = 0;
-      if (len > 4 && !strncmp(line, "#JB,", 4)) jctSerialLoad(strtoul(line + 4, nullptr, 10));   // v7.13 调试路口放大图
-      else if (len) handleVoiceText(String(line));
+      if (len) handleVoiceText(String(line));
       len = 0;
     } else if (len < sizeof(line) - 1) line[len++] = c;
   }
