@@ -106,7 +106,7 @@ var speck = loaded; speck[0] = 0xff000000
 check(!AmapCapturePolicy.settled(loading, loaded), "A snapshot with tiles still streaming in is not settled")
 check(AmapCapturePolicy.settled(loaded, speck), "Identical snapshots apart from a speck are settled")
 check(!AmapCapturePolicy.settled([], []), "Empty snapshots are never settled")
-check(AmapCapturePolicy.renderSize(for: 1200) == 1800, "Base renderer stays within iPhone drawable texture limits")
+check(AmapCapturePolicy.renderSize(for: 1200) == 1360 && AmapCapturePolicy.renderSize(for: 1200) * 3 < 4096 && AmapCapturePolicy.renderSize(for: 600) * 3 < 4096, "Base renderer stays within iPhone drawable texture limits")
 check(AmapCapturePolicy.aligned([1,2,3,4], [1.4,2,3,4]), "Allow subpixel camera roundoff")
 check(!AmapCapturePolicy.aligned([1,2,3,4], [1.6,2,3,4]), "Reject shifted building difference camera")
 check(!AmapCapturePolicy.aligned([1,2,3,4], [1,.nan,3,4]), "Reject invalid projection")
