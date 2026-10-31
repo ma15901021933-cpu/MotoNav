@@ -19,8 +19,6 @@ final class AmapCaptureHost: NSObject {
     private var reference: [UInt32]?
     private var referenceProjection: [Double]?
     private var emptyBuildingChecks = 0
-    private var settle: [UInt32]?
-    private var settleTries = 0
     private var timer: Timer?
     private var observer: NSObjectProtocol?
     private var satelliteCapture=false
@@ -85,7 +83,7 @@ final class AmapCaptureHost: NSObject {
             satelliteCapture=satellite
             m.mapType = satellite ? .satellite : .standard
             m.isShowsLabels = style == 0
-            pending = completion; reference = nil; referenceProjection = nil; emptyBuildingChecks = 0; settle = nil; settleTries = 0; started = Date(); serial += 1
+            pending = completion; reference = nil; referenceProjection = nil; emptyBuildingChecks = 0; started = Date(); serial += 1
             let id = serial
             m.isShowsBuildings = false; m.rotationDegree = 0; m.cameraDegree = n == 600 ? 0.05 : 0
             let margin = n == 600 ? 20.0 : 100.0
@@ -145,16 +143,6 @@ final class AmapCaptureHost: NSObject {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { self.snapshot(id, frame: frame, x: x, y: y, n: n) }; return
                     }
                     let projection = [Double(tl.x) * sx, Double(tl.y) * sy, Double(tr.x) * sx, Double(bl.y) * sy]
-                    // 高德地图块是移动镜头后才陆续下载的：截早了会有空白区域，还会被存进沿线离线包。
-                    // 底图等前后两张截图基本一样（加载完了）再用；最多再等 5 次，仍在变化就用最后一张
-                    // （0.15.9 曾在这里直接算失败，结果圆屏一直收不到地图、不显示小地图）。
-                    if n != 600, self.settleTries < 5 {
-                        if let previous = self.settle, AmapCapturePolicy.settled(previous, pixels) {
-                        } else {
-                            self.settle = pixels; self.settleTries += 1
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.snapshot(id, frame: frame, x: x, y: y, n: n) }; return
-                        }
-                    }
                     // Both shots share exactly the same camera. Only the SDK building layer changes.
                     if n == 600, self.reference == nil {
                         self.reference = pixels; self.referenceProjection = projection; m.isShowsBuildings = true
@@ -178,7 +166,7 @@ final class AmapCaptureHost: NSObject {
     }
     private func finish(_ result: Result<Shot, Error>) {
         guard let done = pending else { return }
-        pending = nil; serial += 1; reference = nil; referenceProjection = nil; settle = nil; timer?.invalidate(); timer = nil
+        pending = nil; serial += 1; reference = nil; referenceProjection = nil; timer?.invalidate(); timer = nil
         if UIApplication.shared.applicationState == .active { map?.isShowsBuildings = false }
         map?.renderringDisabled = true; map?.isAllowDecreaseFrame = true
         #if DEBUG

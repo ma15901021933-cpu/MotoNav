@@ -411,10 +411,11 @@ enum MapPipelineTrace {
     private static let clock: DateFormatter = { let f = DateFormatter(); f.dateFormat = "HH:mm:ss"; return f }()
     private static func note(_ name: String, _ fields: [String: Any]) {
         if name == "view-coverage" || name == "tile-start" || name == "capture-start" { return }
+        if (fields["type"] as? Int) == 5 || name == "bulk-write-response" { return }   // 播报声音的传输太多，会把地图的几条挤掉
         let detail = fields.keys.sorted().filter { $0 != "job" }.map { "\($0)=\(fields[$0]!)" }.joined(separator: " ")
         recentLock.lock()
         recent.append("\(clock.string(from: Date())) \(name) \(detail)".prefix(160).description)
-        if recent.count > 8 { recent.removeFirst(recent.count - 8) }
+        if recent.count > 12 { recent.removeFirst(recent.count - 12) }
         let text = recent.joined(separator: "\n")
         recentLock.unlock()
         DispatchQueue.main.async { MapFeeder.shared.traceText = text }
