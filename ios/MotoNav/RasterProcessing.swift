@@ -65,7 +65,9 @@ enum AmapCapturePolicy {
     // SDK zoom is based on logical view bounds, not on Retina screenshot pixel count.
     // Keep the 3x drawable below 4096 pixels; 1200 points still exceeds zoom 17
     // for a 1.2km building tile. Android pixel dimensions are not iOS points.
-    static func renderSize(for tileSize: Int) -> Int { tileSize == 600 ? 1200 : 720 }
+    // Base: 1800 points for 2.6 km ≈ 1.4 m/point (zoom ≈ 16). At 720 points (zoom ≈ 15) AMap
+    // leaves out side streets, so the round screen showed little more than the route line.
+    static func renderSize(for tileSize: Int) -> Int { tileSize == 600 ? 1200 : 1800 }
     static func aligned(_ reference: [Double], _ current: [Double]) -> Bool {
         guard reference.count == 4, current.count == 4 else { return false }
         return zip(reference, current).allSatisfy { a, b in a.isFinite && b.isFinite && abs(a - b) <= 0.5 }
