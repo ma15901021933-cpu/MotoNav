@@ -52,6 +52,8 @@ jobs:
           /tmp/pacing
           swiftc ios/MotoNav/ScreenVoicePacker.swift ios/tests/screen-voice/main.swift -o /tmp/screen-voice
           /tmp/screen-voice
+          swiftc ios/MotoNav/TrafficBar.swift ios/tests/traffic-bar/main.swift -o /tmp/traffic-bar
+          /tmp/traffic-bar
           python3 -m unittest discover -s firmware/tests -p 'test_*.py'
       - name: Install ESP32 build tools
         if: steps.firmware.outputs.changed == 'true'

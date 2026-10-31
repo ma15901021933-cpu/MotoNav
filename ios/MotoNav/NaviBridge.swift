@@ -500,7 +500,7 @@ final class NaviBridge: NSObject, ObservableObject {
         send(curAngle != nil ? "\(wireDir),\(d),\(curAngle!)" : "\(wireDir),\(d)")
     }
 
-    /// 两次真实数据之间按车速推算距离；顺便检查测速提示是否过期、每分钟刷新路况
+    /// 两次真实数据之间按车速推算距离；顺便检查测速提示是否过期、每 30 秒刷新路况
     private func onTick() {
         guard arrival.acceptsGuidance(arrival.generation) else { return }
         let el = Date().timeIntervalSince(baseAt)
@@ -509,7 +509,7 @@ final class NaviBridge: NSObject, ObservableObject {
             if lightBase >= 0 { pushLight(max(0, Int((Double(lightBase) - speedMps * Date().timeIntervalSince(lightAt)).rounded()))) }
         }
         trackCamera()
-        if Date().timeIntervalSince(lastTrafficAt) > 60 { pushTraffic(nil) }
+        if Date().timeIntervalSince(lastTrafficAt) > 30 { pushTraffic(nil) }   // v0.15.4 60 → 30 秒
     }
 
     // MARK: - 路口实际转弯角度
@@ -757,26 +757,17 @@ final class NaviBridge: NSObject, ObservableObject {
 
     // MARK: - 路况、重新规划、GPS、更快路线
 
-    /// 路况：和高德一样上色（1 畅通、2 缓行、3 拥堵、4 严重拥堵、6 极其畅通；未知、内部道路不发）："#u,起点米,终点米,状态,..."（米 = 离路线起点）
+    /// 路况：和高德一样上色，消息格式见 TrafficBar（米 = 离路线起点）。
+    /// v0.15.4 明确取整条路线（getTrafficStatuses 只说是“当前道路”，可能从现在的位置算起，圆屏会把新路况画到车后面）；
+    /// 已走过的不发；每 30 秒重取一次，高德回调路况变化时也重取。
     private func pushTraffic(_ list: [AMapNaviTrafficStatus]?) {
         lastTrafficAt = Date()
-        guard let list = list ?? manager.getTrafficStatuses() else { return }
-        var segs: [[Int]] = []
-        var pos = 0
-        for o in list {
-            let len = o.length, st = o.status.rawValue
-            if (st >= 1 && st <= 4 || st == 6) && len > 0 {      // 6 极其畅通：圆屏画深绿
-                if let last = segs.last, last[2] == st, last[1] >= pos - 5 { segs[segs.count - 1][1] = pos + len }
-                else { segs.append([pos, pos + len, st]) }
-            }
-            pos += len
-        }
-        var m = "#u"
-        for sg in segs {
-            let part = ",\(sg[0]),\(sg[1]),\(sg[2])"
-            if m.count + part.count > 480 { break }
-            m += part
-        }
+        let length = manager.naviRoute?.routeLength ?? 0
+        var whole: [AMapNaviTrafficStatus]? = nil
+        if length > 0 { whole = manager.getTrafficStatuses(withStartPosition: 0, distance: Int32(length)) }
+        guard let src = (whole?.isEmpty == false ? whole : nil) ?? list ?? manager.getTrafficStatuses() else { return }
+        let travelled = length > 0 && uiRemainM > 0 ? max(0, length - uiRemainM) : 0
+        let m = TrafficBar.message(src.map { (length: $0.length, status: $0.status.rawValue) }, routeLength: length, travelled: travelled)
         if m != lastTrafficMsg { lastTrafficMsg = m; BleLink.shared.send(m) }
     }
 
