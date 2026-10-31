@@ -107,6 +107,7 @@ final class RouteOfflineMaps {
                     self.retryAt = .distantPast
                 case .failure(let error):
                     self.retryAt = Date().addingTimeInterval(15)
+                    MapPipelineTrace.event("offline-failed", ["block": i + 1, "error": error.localizedDescription])
                     self.onStatus("沿线离线地图：\(error.localizedDescription)，保留已保存地图")
                 }
             }

@@ -37,6 +37,7 @@ final class MapFeeder: ObservableObject {
     @Published var offlineStatus = "选择路线后，在前台自动准备沿线离线底图"
     @Published var chunkInfo = ""
     @Published var buildingInfo = ""
+    @Published var traceText = ""            // 最近几步地图处理过程，显示在“圆屏显示”页，排查用
     @Published var routeInfo = ""
     @Published var chunkAcked = false
     @Published var routeAcked = false
@@ -98,6 +99,7 @@ final class MapFeeder: ObservableObject {
         workToken.cancel(); requestSerial += 1; routeBuildSerial += 1; fetching = false
     }
     func resetChunk() {
+        MapPipelineTrace.event("map-reset")
         buildingInfo = ""; lastBuildingTry = .distantPast
         workToken.cancel(); requestSerial += 1; fetching = false
         haveChunk = false; lastFetchFail = .distantPast
@@ -122,6 +124,7 @@ final class MapFeeder: ObservableObject {
         let identity = "\(key)|\(hasher.finalize())|\(src)|\(buildingMode)"
         if identity == offlineKey, offlineMaps != nil { return }
         offlineMaps?.close(); offlineKey = identity; routeProgress = -1
+        MapPipelineTrace.event("route-prepare", ["points": coords.count])
         workToken.cancel(); requestSerial += 1; fetching = false
         do {
             let plan = try RouteMapPlan(coords.map { (x: f.x($0.lng), y: f.y($0.lat)) })
@@ -268,7 +271,8 @@ final class MapFeeder: ObservableObject {
             DispatchQueue.main.async {
                 guard serial == self.requestSerial, !token.isCancelled else { return }
                 self.fetching = false
-                guard let packet = bytes else { self.lastFetchFail = Date(); self.status = "地图准备失败，保留已有地图：\(errorText)"; return }
+                guard let packet = bytes else {
+                    MapPipelineTrace.event("fetch-failed", ["error": errorText]); self.lastFetchFail = Date(); self.status = "地图准备失败，保留已有地图：\(errorText)"; return }
                 self.acceptChunk(packet, cx: cx, cy: cy, sat: gotSat, type: type, info: info, src: src)
             }
         }
@@ -401,12 +405,28 @@ enum MapPipelineTrace {
         FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("map-pipeline")
     }
     #endif
+    // 正式版也保留最近几条（只在内存里），显示在 App 上，方便看出地图卡在哪一步
+    private static let recentLock = NSLock()
+    private static var recent: [String] = []
+    private static let clock: DateFormatter = { let f = DateFormatter(); f.dateFormat = "HH:mm:ss"; return f }()
+    private static func note(_ name: String, _ fields: [String: Any]) {
+        if name == "view-coverage" || name == "tile-start" || name == "capture-start" { return }
+        let detail = fields.keys.sorted().filter { $0 != "job" }.map { "\($0)=\(fields[$0]!)" }.joined(separator: " ")
+        recentLock.lock()
+        recent.append("\(clock.string(from: Date())) \(name) \(detail)".prefix(160).description)
+        if recent.count > 8 { recent.removeFirst(recent.count - 8) }
+        let text = recent.joined(separator: "\n")
+        recentLock.unlock()
+        DispatchQueue.main.async { MapFeeder.shared.traceText = text }
+    }
     static func event(_ name: String, _ fields: [String: Any] = [:]) {
+        note(name, fields)
         #if DEBUG || MAP_DIAGNOSTICS
         queue.async { record(name, fields) }
         #endif
     }
     static func packet(_ bytes: Data, type: Int, id: Int, ready: Bool) {
+        note("map-send", ["type": type, "id": id, "KB": bytes.count / 1024, "ready": ready])
         #if DEBUG || MAP_DIAGNOSTICS
         queue.async {
             try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

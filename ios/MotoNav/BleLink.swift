@@ -441,6 +441,7 @@ extension BleLink: CBCentralManagerDelegate, CBPeripheralDelegate {
         mediaHIDSupported = false; mediaHIDReady = false; mediaHIDMode = false; mediaLyricsSupported = false; mediaLyricsActive = false; mediaAMSControls = 0; verified = false; buildingProbe.reset(); txNotifyReady = false
         voiceSupported = false; ScreenVoice.shared.linkLost()
         MusicBridge.shared.resetAMS()
+        MapPipelineTrace.event("ble-disconnect")
         MapFeeder.shared.onBuildingCapability()
         rxChar = nil;txChar=nil
         status = wantConnected ? "断开了，等圆屏回来自动重连…" : "未连接"

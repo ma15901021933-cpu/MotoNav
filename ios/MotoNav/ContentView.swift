@@ -486,6 +486,9 @@ struct ContentView: View {
                 Text("关闭").tag(0); Text("0.3秒").tag(300); Text("0.6秒").tag(600)
             }.pickerStyle(.segmented)
             Text("地图状态：\(map.shortStatus)").font(.caption).foregroundColor(Self.sub)
+            if !map.traceText.isEmpty {
+                Text(map.traceText).font(.system(size: 10, design: .monospaced)).foregroundColor(Self.sub)
+            }
             HStack {
                 Text("风格").foregroundColor(.white)
                 Spacer()
