@@ -121,11 +121,12 @@ final class MapFeeder: ObservableObject {
         guard enabled, !satMode, Settings.shared.theme != 11 else { return }
         var hasher = Hasher()
         for c in coords { hasher.combine(c.lat); hasher.combine(c.lng) }
-        let identity = "\(key)|\(hasher.finalize())|\(src)|\(buildingMode)"
+        // 选路线和开始导航给同一条路线起的名字不同，只按坐标判断是不是同一条，免得反复重来
+        let identity = "\(hasher.finalize())|\(src)|\(buildingMode)"
         if identity == offlineKey, offlineMaps != nil { return }
         offlineMaps?.close(); offlineKey = identity; routeProgress = -1
         MapPipelineTrace.event("route-prepare", ["points": coords.count])
-        workToken.cancel(); requestSerial += 1; fetching = false
+        // 正在截的是当前位置附近的地图，换路线也用得上，不打断它
         do {
             let plan = try RouteMapPlan(coords.map { (x: f.x($0.lng), y: f.y($0.lat)) })
             let maps = RouteOfflineMaps(frame: f, plan: plan, source: src, buildings: buildingMode,

@@ -22,6 +22,7 @@ final class AmapCaptureHost: NSObject {
     private var timer: Timer?
     private var observer: NSObjectProtocol?
     private var satelliteCapture=false
+    private var retries = 0, retryReason = ""
     private var mpp: Double { satelliteCapture ? 3.5 : 2.0 }
 
     func attach(_ view: UIView) {
@@ -83,7 +84,7 @@ final class AmapCaptureHost: NSObject {
             satelliteCapture=satellite
             m.mapType = satellite ? .satellite : .standard
             m.isShowsLabels = style == 0
-            pending = completion; reference = nil; referenceProjection = nil; emptyBuildingChecks = 0; started = Date(); serial += 1
+            pending = completion; retries = 0; retryReason = ""; reference = nil; referenceProjection = nil; emptyBuildingChecks = 0; started = Date(); serial += 1
             let id = serial
             m.isShowsBuildings = false; m.rotationDegree = 0; m.cameraDegree = n == 600 ? 0.05 : 0
             let margin = n == 600 ? 20.0 : 100.0
@@ -102,7 +103,7 @@ final class AmapCaptureHost: NSObject {
             }
             timer = Timer.scheduledTimer(withTimeInterval: n == 600 ? 24 : 40, repeats: false) { [weak self] _ in
                 guard let self = self, self.serial == id else { return }
-                self.finish(.failure(MapProcessingError.invalid("高德取图超时，保留已有地图")))
+                self.finish(.failure(MapProcessingError.invalid("高德取图超时（重拍\(self.retries)次 \(self.retryReason)），保留已有地图")))
             }
         } catch { completion(.failure(error)) }
     }
@@ -113,6 +114,7 @@ final class AmapCaptureHost: NSObject {
             DispatchQueue.main.async {
                 guard let self = self, self.serial == id, self.pending != nil else { return }
                 guard state == 1, let cg = image?.cgImage else {
+                    self.retries += 1; self.retryReason = "state=\(state)"
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { self.snapshot(id, frame: frame, x: x, y: y, n: n) }; return
                 }
                 #if DEBUG
@@ -140,6 +142,7 @@ final class AmapCaptureHost: NSObject {
                     guard ok else { throw MapProcessingError.invalid("高德截图像素解码失败") }
                     // SDK state=1 can precede the first GPU frame. Do not publish a transparent image.
                     if stride(from: 0, to: pixels.count, by: 97).contains(where: { pixels[$0] >> 24 < 250 }) {
+                        self.retries += 1; self.retryReason = "透明"
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { self.snapshot(id, frame: frame, x: x, y: y, n: n) }; return
                     }
                     let projection = [Double(tl.x) * sx, Double(tl.y) * sy, Double(tr.x) * sx, Double(bl.y) * sy]
